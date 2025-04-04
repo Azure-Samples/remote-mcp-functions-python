@@ -1,6 +1,6 @@
 <!--
 ---
-name: Remote MCP with Azure Functions (Pyhthon)
+name: Remote MCP with Azure Functions (Python)
 description: Run a remote MCP server on Azure functions.  
 page_type: sample
 languages:
