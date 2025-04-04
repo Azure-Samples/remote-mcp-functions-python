@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: remote-mcp-functions-python
+metadata:
+  template: remote-mcp-functions-python@1.0.0
+services:
+  api:
+    project: ./src/
+    language: python
+    host: function
