@@ -2,7 +2,7 @@
 
 name: remote-mcp-functions-python
 metadata:
-  template: remote-mcp-functions-python@1.0.0
+  template: remote-mcp-functions-python@1.0.1
 services:
   api:
     project: ./src/
