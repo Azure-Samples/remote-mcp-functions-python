@@ -244,13 +244,12 @@ azd deploy
 
 ## Source Code
 
-The function code for the `get_snippet` and `save_snippet` endpoints are defined in the Python files in the `src` directory. The MCP function annotations expose these functions as MCP Server tools.
+The function code for the various endpoints are defined in the Python files in the `src` directory. The MCP function annotations expose these functions as MCP Server tools.
 
 Here's the actual code from the function_app.py file:
 
 ```python
-
-@app.generic_trigger(arg_name="context", type="mcpToolTrigger", toolName="hello", 
+@app.generic_trigger(arg_name="context", type="mcpToolTrigger", toolName="hello_mcp", 
                      description="Hello world.", 
                      toolProperties="[]")
 def hello_mcp(context) -> None:
@@ -269,7 +268,7 @@ def hello_mcp(context) -> None:
 @app.generic_trigger(
     arg_name="context",
     type="mcpToolTrigger",
-    toolName="getsnippet",
+    toolName="get_snippet",
     description="Retrieve a snippet by name.",
     toolProperties=tool_properties_get_snippets_json
 )
@@ -277,7 +276,7 @@ def hello_mcp(context) -> None:
     arg_name="file",
     type="blob",
     connection="AzureWebJobsStorage",
-    path=_BLOB_PATH
+    path=_SNIPPET_BLOB_PATH
 )
 def get_snippet(file: func.InputStream, context) -> str:
     """
@@ -298,7 +297,7 @@ def get_snippet(file: func.InputStream, context) -> str:
 @app.generic_trigger(
     arg_name="context",
     type="mcpToolTrigger",
-    toolName="savesnippet",
+    toolName="save_snippet",
     description="Save a snippet with a name.",
     toolProperties=tool_properties_save_snippets_json
 )                   
@@ -306,7 +305,7 @@ def get_snippet(file: func.InputStream, context) -> str:
     arg_name="file",
     type="blob",
     connection="AzureWebJobsStorage",
-    path=_BLOB_PATH
+    path=_SNIPPET_BLOB_PATH
 )
 def save_snippet(file: func.Out[str], context) -> str:
     content = json.loads(context)
@@ -322,6 +321,70 @@ def save_snippet(file: func.Out[str], context) -> str:
     file.set(snippet_content_from_args)
     logging.info(f"Saved snippet: {snippet_content_from_args}")
     return f"Snippet '{snippet_content_from_args}' saved successfully"
+
+@app.generic_trigger(
+    arg_name="context",
+    type="mcpToolTrigger",
+    toolName="save_simple_sensor_data",
+    description="Save sensor data.",
+    toolProperties=tool_properties_simple_sensor_data_json,
+)
+@app.generic_output_binding(arg_name="file", type="blob", connection="AzureWebJobsStorage", path=_SIMPLE_SENSOR_BLOB_PATH)
+def save_simple_sensor_data(file: func.Out[str], context) -> str:
+    """
+    Save sensor data to Azure Blob Storage.
+
+    Args:
+        file (func.Out[str]): The output binding to write the sensor data to Azure Blob Storage.
+        context: The trigger context containing the input arguments.
+
+    Returns:
+        str: A success message indicating that the sensor data was saved.
+    """
+    content = json.loads(context)
+    logging.info(f"Received content: {content}")
+    sensor_data = content["arguments"]
+
+    if not sensor_data:
+        return "No sensor data provided"
+
+    file.set(json.dumps(sensor_data))
+    logging.info(f"Saved sensor data: {sensor_data}")
+    return "Sensor data saved successfully"
+
+@app.generic_trigger(
+    arg_name="context",
+    type="mcpToolTrigger",
+    toolName="save_complex_sensor_data",
+    description="Save complex IoT device data with nested sensor, event, and configuration information.",
+    toolProperties=tool_properties_complex_sensor_data_json,
+)
+@app.generic_output_binding(arg_name="file", type="blob", connection="AzureWebJobsStorage", path=_COMPLEX_SENSOR_BLOB_PATH)
+def save_complex_sensor_data(file: func.Out[str], context) -> str:
+    """
+    Save complex IoT device data to Azure Blob Storage.
+
+    Args:
+        file (func.Out[str]): The output binding to write the device data to Azure Blob Storage.
+        context: The trigger context containing the input arguments.
+
+    Returns:
+        str: A success message indicating that the device data was saved.
+    """
+    content = json.loads(context)
+    logging.info(f"Received device data content: {content}")
+    device_data = content["arguments"]
+
+    if not device_data:
+        return "No device data provided"
+
+    if not device_data.get("device_id"):
+        return "Device ID is required"
+
+    # Save the complete device data structure
+    file.set(json.dumps(device_data))
+    logging.info(f"Saved device data for device: {device_data.get('device_id')}")
+    return f"Device data for {device_data.get('device_id')} saved successfully"
 ```
 
 Note that the `host.json` file also includes a reference to the experimental bundle, which is required for apps using this feature:
@@ -333,9 +396,59 @@ Note that the `host.json` file also includes a reference to the experimental bun
 }
 ```
 
-## Next Steps
+## MCP Tool Functions Overview
 
-- Add [API Management](https://aka.ms/mcp-remote-apim-auth) to your MCP server (auth, gateway, policies, more!)
-- Add [built-in auth](https://learn.microsoft.com/en-us/azure/app-service/overview-authentication-authorization) to your MCP server
-- Enable VNET using VNET_ENABLED=true flag
-- Learn more about [related MCP efforts from Microsoft](https://github.com/microsoft/mcp/tree/main/Resources)
+This MCP server exposes several functions as tools, available to clients like GitHub Copilot or MCP Inspector:
+
+### 1. Hello MCP (`hello_mcp`)
+A simple greeting function to verify connectivity and tool invocation.  
+**Example:**  
+`Say Hello`
+
+---
+
+### 2. Snippet Management
+
+#### Get Snippet (`get_snippet`)
+Retrieves a named snippet from Azure Blob Storage.  
+**Input:** snippet name  
+**Example:**  
+`Retrieve snippet1 and apply to my code`
+
+#### Save Snippet (`save_snippet`)
+Saves a snippet with a specified name to Azure Blob Storage.  
+**Input:** snippet name, snippet content  
+**Example:**  
+`Save this code as my_function_snippet`
+
+---
+
+### 3. IoT Sensor Data Management
+
+#### Save Simple Sensor Data (`save_simple_sensor_data`)
+Saves basic sensor readings.  
+**Fields:**  
+- `sensor_id`: Unique sensor identifier  
+- `metric_name`: Name of the metric (e.g., temperature)  
+- `value`: Numeric value  
+- `unit`: Measurement unit  
+- `timestamp`: When the reading was taken  
+- `IsCalibrated`: Manual or automatic calibration  
+
+**Example:**  
+`Save sensor data for sensor THM001 with temperature reading of 24.5°C taken now`
+
+#### Save Complex Sensor Data (`save_complex_sensor_data`)
+Stores detailed IoT device data, including:  
+- Device ID and timestamp  
+- Location (latitude, longitude, altitude, description)  
+- Array of sensors (with metrics, status, and errors)  
+- Events (with triggers, thresholds, severity)  
+- Configuration (sampling/transmit intervals, firmware, network info)  
+
+**Example:**  
+`Save complex device data for IoT-Gateway-123 with current location, temperature and humidity sensors, and network configuration`
+
+---
+
+All data is stored in Azure Blob Storage and can be accessed or processed by other Azure services as
