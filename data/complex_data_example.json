@@ -1,0 +1,98 @@
+{
+  "device_id": "12334",
+  "timestamp": 1751963567,
+  "location": {
+    "latitude": 45.4642,
+    "longitude": 9.19,
+    "altitude": 120.5,
+    "description": "Milan, lab 3, second floor"
+  },
+  "sensors": [
+    {
+      "sensor_id": "temp_01",
+      "type": "temperature",
+      "metrics": [
+        {
+          "name": "ambient",
+          "value": 22.7,
+          "unit": "celsius",
+          "timestamp": 1751893366,
+          "is_calibrated": true,
+          "quality": "good"
+        },
+        {
+          "name": "surface",
+          "value": 24.1,
+          "unit": "celsius",
+          "timestamp": 1751893366,
+          "is_calibrated": false,
+          "quality": "warning"
+        }
+      ],
+      "status": {
+        "battery_level": 87,
+        "signal_strength": -67,
+        "last_maintenance": 1751880000,
+        "errors": []
+      }
+    },
+    {
+      "sensor_id": "hum_01",
+      "type": "humidity",
+      "metrics": [
+        {
+          "name": "relative",
+          "value": 55.2,
+          "unit": "percent",
+          "timestamp": 1751893366,
+          "is_calibrated": true,
+          "quality": "good"
+        }
+      ],
+      "status": {
+        "battery_level": 92,
+        "signal_strength": -70,
+        "last_maintenance": 1751800000,
+        "errors": ["sensor_drift"]
+      }
+    },
+    {
+      "sensor_id": "motion_01",
+      "type": "motion",
+      "metrics": [
+        {
+          "name": "acceleration",
+          "value": [0.01, 0.02, 0],
+          "unit": "m/s2",
+          "timestamp": 1751893366,
+          "is_calibrated": true,
+          "quality": "good"
+        }
+      ],
+      "status": {
+        "battery_level": 60,
+        "signal_strength": -80,
+        "last_maintenance": 1751000000,
+        "errors": []
+      }
+    }
+  ],
+  "events": [
+    {
+      "event_id": "evt_1001",
+      "type": "threshold_breach",
+      "sensor_id": "temp_01",
+      "metric": "surface",
+      "value": 24.1,
+      "threshold": 24,
+      "timestamp": 1751893366,
+      "severity": "medium"
+    }
+  ],
+  "configuration": {
+    "sampling_interval_sec": 60,
+    "transmit_interval_sec": 300,
+    "firmware_version": "2.1.0",
+    "network": { "type": "wifi", "ssid": "LabNet", "ip": "192.168.1.101" }
+  }
+}
