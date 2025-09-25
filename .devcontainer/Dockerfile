@@ -11,7 +11,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - \
 
 # Install Azure Functions Core Tools
 # Preview with aarch64 support
-RUN sudo npm install -g azure-functions-core-tools@4.0.7332-preview1
+RUN sudo npm install -g azure-functions-core-tools
 
 # Install MCP Inspector
 RUN sudo npm install -g @modelcontextprotocol/inspector
