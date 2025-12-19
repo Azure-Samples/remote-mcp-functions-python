@@ -57,7 +57,7 @@ def heartbeat_mcp(context) -> str:
         str: A greeting message.
     """
 
-    heartbeatMsg = 'Heartbeat MCP Service Is Up And Running I am MCPTool! {0}'.format(datetime.date.today())
+    heartbeatMsg = 'At {0}: Heartbeat MCP Service Is Up And Running I am MCPTool!'.format(datetime.date.today())
     logging.info(heartbeatMsg)
     return heartbeatMsg
 

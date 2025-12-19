@@ -11,22 +11,5 @@
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle.Experimental",
     "version": "[4.*, 5.0.0)"
-  },
-  "extensions": {
-    "mcp": {
-      "instructions": [ 
-        "Server provides utility functions that provide a snippet storage and retrieval mechanism.  ",
-        "The server also provide summary information on what work was done for a given period of time"
-      ],
-      "serverName": "Snippets",
-      "serverVersion": "1.0.0",
-      "encryptClientState": true,
-      "messageOptions": {
-        "useAbsoluteUriForEndpoint": false
-      },
-      "system": {
-        "webhookAuthorizationLevel": "System"
-      }
-    }    
   }
 }
