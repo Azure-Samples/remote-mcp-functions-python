@@ -1,5 +1,6 @@
 import json
 import logging
+import datetime
 
 import azure.functions as func
 
@@ -41,13 +42,13 @@ tool_properties_get_snippets_json = json.dumps([prop.to_dict() for prop in tool_
 @app.generic_trigger(
     arg_name="context",
     type="mcpToolTrigger",
-    toolName="hello_mcp",
-    description="Hello world.",
+    toolName="heartbeat_mcp",
+    description="Provides a Heartbeat message/ping verification that the MCP Service is up and running.",
     toolProperties="[]",
 )
-def hello_mcp(context) -> None:
+def heartbeat_mcp(context) -> None:
     """
-    A simple function that returns a greeting message.
+    A simple function that returns a heartbeat message.
 
     Args:
         context: The trigger context (not used in this function).
@@ -55,7 +56,10 @@ def hello_mcp(context) -> None:
     Returns:
         str: A greeting message.
     """
-    return "Hello I am MCPTool!"
+
+    heartbeatMsg = 'Heartbeat MCP Service Is Up And Running I am MCPTool! (%s)' % datetime.date.today()
+    logging.info(heartbeatMsg)
+    return heartbeatMsg
 
 
 @app.generic_trigger(
