@@ -46,7 +46,7 @@ tool_properties_get_snippets_json = json.dumps([prop.to_dict() for prop in tool_
     description="Provides a Heartbeat message/ping verification that the MCP Service is up and running.",
     toolProperties="[]",
 )
-def heartbeat_mcp(context) -> None:
+def heartbeat_mcp(context) -> str:
     """
     A simple function that returns a heartbeat message.
 
@@ -57,7 +57,7 @@ def heartbeat_mcp(context) -> None:
         str: A greeting message.
     """
 
-    heartbeatMsg = 'Heartbeat MCP Service Is Up And Running I am MCPTool! (%s)' % datetime.date.today()
+    heartbeatMsg = 'Heartbeat MCP Service Is Up And Running I am MCPTool! {0}'.format(datetime.date.today())
     logging.info(heartbeatMsg)
     return heartbeatMsg
 
