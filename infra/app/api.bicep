@@ -35,6 +35,9 @@ var baseAppSettings = {
   // Application Insights settings are always included
   APPLICATIONINSIGHTS_AUTHENTICATION_STRING: applicationInsightsIdentity
   APPLICATIONINSIGHTS_CONNECTION_STRING: applicationInsights.properties.ConnectionString
+  
+  // Required for MCP decorators (azure-functions 1.25.0b2+)
+  PYTHON_ISOLATE_WORKER_DEPENDENCIES: '1'
 }
 
 // Dynamically build storage endpoint settings based on feature flags
