@@ -38,5 +38,5 @@ def save_snippet(file: func.Out[str], snippetname: str, snippet: str) -> str:
         return "No snippet content provided"
 
     file.set(snippet)
-    logging.info(f"Saved snippet: {snippetname}")
+    logging.info(f"Saved snippet: {snippet}")
     return f"Snippet '{snippetname}' saved successfully with content: {snippet}"
