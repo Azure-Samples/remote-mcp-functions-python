@@ -39,4 +39,4 @@ def save_snippet(file: func.Out[str], snippetname: str, snippet: str) -> str:
 
     file.set(snippet)
     logging.info(f"Saved snippet: {snippetname}")
-    return f"Snippet '{ snippetname}' saved successfully with content: {snippet}"
+    return f"Snippet '{snippetname}' saved successfully with content: {snippet}"
