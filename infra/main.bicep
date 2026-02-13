@@ -119,6 +119,7 @@ module api './app/api.bicep' = {
     identityId: apiUserAssignedIdentity.outputs.resourceId
     identityClientId: apiUserAssignedIdentity.outputs.clientId
     appSettings: {
+      PYTHON_ISOLATE_WORKER_DEPENDENCIES: '1'
     }
     virtualNetworkSubnetId: vnetEnabled ? serviceVirtualNetwork.outputs.appSubnetID : ''
   }
