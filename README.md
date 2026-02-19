@@ -151,7 +151,13 @@ This verification step ensures your MCP server is correctly interacting with the
 
 ## Deploy to Azure for Remote MCP
 
-Run this [azd](https://aka.ms/azd) command to provision the function app, with any required Azure resources, and deploy your code:
+In the root directory, create a new [azd](https://aka.ms/azd) environment. This is going to become the resource group of your Azure resources: 
+
+```shell
+azd env new <reource-group-name>
+```
+
+Run this azd command to provision the function app, with any required Azure resources, and deploy your code:
 
 ```shell
 azd up
@@ -163,7 +169,7 @@ You can opt-in to a VNet being used in the sample. To do so, do this before `azd
 azd env set VNET_ENABLED true
 ```
 
-Additionally, [API Management]() can be used for improved security and policies over your MCP Server, and [App Service built-in authentication](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization) can be used to set up your favorite OAuth provider including Entra.  
+Additionally, [API Management](https://aka.ms/mcp-remote-apim-auth) can be used for improved security and policies over your MCP Server, and [App Service built-in authentication](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization) can be used to set up your favorite OAuth provider including Entra.  
 
 ## Connect to your *remote* MCP server function app from a client
 
@@ -317,12 +323,12 @@ def save_snippet(file: func.Out[str], snippetname: str, snippet: str) -> str:
     return f"Snippet '{snippet}' saved successfully"
 ```
 
-Note that the `host.json` file also includes a reference to the experimental bundle, which is required for apps using this feature:
+Note that the `host.json` file also includes a reference to the _preview_ extension bundle, which is required for apps using this feature now:
 
 ```json
 "extensionBundle": {
-  "id": "Microsoft.Azure.Functions.ExtensionBundle.Experimental",
-  "version": "[4.*, 5.0.0)"
+  "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+  "version": "[4.32.0, 5.0.0)"
 }
 ```
 
@@ -360,15 +366,16 @@ The UI must be bundled before running the function app:
 cd src/app
 npm install
 npm run build
-cd ../..
+cd ../
 ```
 
 This creates a bundled `src/app/dist/index.html` file that the function serves.
 
 #### 2. Run the Function App
 
+In the `src` directory, run: 
+
 ```bash
-cd src
 func start
 ```
 
