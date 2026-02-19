@@ -70,7 +70,7 @@ An Azure Storage Emulator is needed for this particular sample because we will s
    func start
    ```
 
-> **Note** by default this will use the webhooks route: `/runtime/webhooks/mcp/sse`.  Later we will use this in Azure to set the key on client/host calls: `/runtime/webhooks/mcp/sse?code=<system_key>`
+> **Note** by default this will use the webhooks route: `/runtime/webhooks/mcp`.  Later we will use this in Azure to set the key on client/host calls: `/runtime/webhooks/mcp?code=<system_key>`
 
 ## Connect to the *local* MCP server from a client/host
 
