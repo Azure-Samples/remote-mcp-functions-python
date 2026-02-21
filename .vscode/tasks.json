@@ -2,6 +2,23 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "pip install (functions)",
+			"type": "shell",
+			"osx": {
+				"command": "${config:azureFunctions.pythonVenv}/bin/python -m pip install -r requirements.txt"
+			},
+			"windows": {
+				"command": "${config:azureFunctions.pythonVenv}\\Scripts\\python -m pip install -r requirements.txt"
+			},
+			"linux": {
+				"command": "${config:azureFunctions.pythonVenv}/bin/python -m pip install -r requirements.txt"
+			},
+			"options": {
+				"cwd": "${workspaceFolder}/src"
+			},
+			"problemMatcher": []
+		},
+		{
 			"type": "func",
 			"label": "func: host start",
 			"command": "host start",
@@ -9,7 +26,17 @@
 			"isBackground": true,
 			"options": {
 				"cwd": "${workspaceFolder}/src"
-			}
+			},
+			"dependsOn": "func: extensions install"
+		},
+		{
+			"type": "func",
+			"command": "extensions install",
+			"dependsOn": "pip install (functions)",
+			"options": {
+				"cwd": "${workspaceFolder}/src"
+			},
+			"problemMatcher": []
 		}
 	]
 }
