@@ -172,3 +172,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Azurite local storage emulator
+__azurite_db_*
+__blobstorage__/
+__queuestorage__/
+
+# Node artifacts (root level)
+package-lock.json
