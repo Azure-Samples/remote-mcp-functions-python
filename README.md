@@ -615,6 +615,9 @@ Key points:
 - Nested objects (`metrics`, `maintenance`, `network`) use `property_type=func.McpPropertyType.OBJECT`
 - The blob path uses `{mcptoolargs.device_id}` so each device gets its own blob
 
+> [!NOTE]
+> If you want to use the IoT MCP tools from VS Code, you may need to temporarily comment out the line that declares `history_last_5_readings` with `property_type=func.McpPropertyType.FLOAT`. In some VS Code startup flows, the MCP server fails to start with an unsupported format/type error for that property. As a workaround, comment out that decorator line, restart the local server, and then use the IoT tools normally.
+
 #### `get_sensor_report` — full report with health score
 
 ```python
@@ -706,6 +709,7 @@ Generate a full report for sensor-factory-42.
 ```
 
 The agent will call the tool and the host will render the interactive IoT dashboard.
+
 
 ## Next Steps
 
