@@ -35,6 +35,14 @@ iot_service = IoTService()
 _IOT_DEVICE_ID_PROPERTY_NAME = "device_id"
 _IOT_BLOB_PATH = "iot-sensors/{mcptoolargs." + _IOT_DEVICE_ID_PROPERTY_NAME + "}.json"
 
+# Constants for the IoT Dashboard resource
+IOT_DASHBOARD_URI = "ui://iot/index.html"
+IOT_DASHBOARD_NAME = "IoT Sensor Dashboard"
+IOT_DASHBOARD_DESCRIPTION = "Interactive dashboard for industrial IoT sensor data"
+IOT_DASHBOARD_MIME_TYPE = "text/html;profile=mcp-app"
+IOT_TOOL_METADATA = '{"ui": {"resourceUri": "ui://iot/index.html"}}'
+IOT_RESOURCE_METADATA = '{"ui": {"prefersBorder": true}}'
+
 
 @app.mcp_tool()
 def hello_mcp() -> str:
@@ -141,6 +149,46 @@ def get_weather(location: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # IoT Tools
 # ---------------------------------------------------------------------------
+
+# IoT Dashboard Resource - returns HTML content for the IoT dashboard widget
+@app.mcp_resource_trigger(
+    arg_name="context",
+    uri=IOT_DASHBOARD_URI,
+    resource_name=IOT_DASHBOARD_NAME,
+    description=IOT_DASHBOARD_DESCRIPTION,
+    mime_type=IOT_DASHBOARD_MIME_TYPE,
+    metadata=IOT_RESOURCE_METADATA
+)
+def get_iot_dashboard(context) -> str:
+    """Get the IoT sensor dashboard HTML content."""
+    logging.info("Getting IoT dashboard")
+
+    try:
+        current_dir = Path(__file__).parent
+        file_path = current_dir / "iot-app" / "dist" / "index.html"
+
+        if file_path.exists():
+            return file_path.read_text(encoding="utf-8")
+        else:
+            logging.warning(f"IoT dashboard file not found at: {file_path}")
+            return """<!DOCTYPE html>
+<html>
+<head><title>IoT Dashboard</title></head>
+<body>
+  <h1>IoT Sensor Dashboard</h1>
+  <p>Dashboard not found. Run <code>cd src/iot-app && npm install && npm run build</code> first.</p>
+</body>
+</html>"""
+    except Exception as e:
+        logging.error(f"Error reading IoT dashboard file: {e}")
+        return """<!DOCTYPE html>
+<html>
+<head><title>IoT Dashboard Error</title></head>
+<body>
+  <h1>IoT Sensor Dashboard</h1>
+  <p>Error loading dashboard content.</p>
+</body>
+</html>"""
 
 @app.mcp_tool()
 @app.mcp_tool_property(
@@ -263,7 +311,7 @@ def ingest_sensor_data(
     return f"Payload for device '{device_id}' saved successfully."
 
 
-@app.mcp_tool()
+@app.mcp_tool(metadata=IOT_TOOL_METADATA)
 @app.mcp_tool_property(
     arg_name="device_id",
     description="Unique identifier of the IoT device to generate the report for."

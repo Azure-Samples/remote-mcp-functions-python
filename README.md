@@ -675,6 +675,38 @@ List the active alerts for sensor-factory-42.
 Show me the metrics summary for sensor-factory-42.
 ```
 
+### IoT Dashboard MCP App
+
+The IoT sample also includes an **MCP App** — an interactive dashboard rendered inside the MCP host when you call `get_sensor_report`. It follows the same Tool + UI Resource pattern as the Weather App.
+
+#### Build the IoT Dashboard UI
+
+```bash
+cd src/iot-app
+npm install
+npm run build
+cd ../
+```
+
+This creates `src/iot-app/dist/index.html`.
+
+#### How It Works
+
+1. `get_sensor_report` declares UI metadata via `@app.mcp_tool(metadata=IOT_TOOL_METADATA)` pointing to `ui://iot/index.html`
+2. `get_iot_dashboard` is an `mcp_resource_trigger` that serves the bundled HTML at that URI
+3. When the MCP host calls `get_sensor_report`, it sees the UI resource and renders the dashboard in a sandboxed iframe
+4. The dashboard shows: health score, live metrics (temp, humidity, pressure, vibration, power), temperature sparkline, active alerts, network info, maintenance schedule, and device tags
+
+#### Try It
+
+With the function app running, ask Copilot:
+
+```plaintext
+Generate a full report for sensor-factory-42.
+```
+
+The agent will call the tool and the host will render the interactive IoT dashboard.
+
 ## Next Steps
 
 - Add [API Management](https://aka.ms/mcp-remote-apim-auth) to your MCP server (auth, gateway, policies, more!)
