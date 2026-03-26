@@ -28,8 +28,8 @@ Below is the architecture diagram for the Remote MCP Server using Azure Function
 
 ## Prerequisites
 
-+ [Python](https://www.python.org/downloads/) version 3.11 or higher
-+ [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?pivots=programming-language-python#install-the-azure-functions-core-tools) >= `4.0.7030`
++ [Python](https://www.python.org/downloads/) version 3.13 or higher
++ [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?pivots=programming-language-python#install-the-azure-functions-core-tools) >= `4.8.0`
 + [Azure Developer CLI](https://aka.ms/azd)
 + To use Visual Studio Code to run and debug locally:
   + [Visual Studio Code](https://code.visualstudio.com/)
@@ -284,8 +284,6 @@ This sample uses the new first-class MCP decorators available in `azure-function
 - Inferring tool properties directly from function signatures and type hints
 - Eliminating the need for manual JSON serialization of tool properties
 - Using standard Python decorators (`@app.mcp_tool()`, `@app.mcp_tool_property()`, `@app.blob_input()`, `@app.blob_output()`)
-
-**Important:** When using the MCP decorators, you must set `PYTHON_ISOLATE_WORKER_DEPENDENCIES=1` in your app settings (both locally in `local.settings.json` and in your deployed Azure Function App).
 
 Here's the actual code from the function_app.py file:
 
