@@ -491,6 +491,224 @@ def get_weather_widget(context) -> str:
 
 The frontend in `src/app/src/weather-app.ts` receives the tool result and renders the weather display. It's bundled with Vite into a single `index.html` that the resource serves.
 
+## IoT Sensor Sample
+
+A sample that demonstrates how to use MCP tools backed by Azure Blob Storage to **ingest, store, and analyse** structured IoT sensor data using a rich, multi-field payload (strings, arrays, nested objects).
+
+### Overview
+
+The IoT sample exposes four MCP tools, all persisting data in Azure Blob Storage (one blob per device):
+
+| Tool | Blob binding | Description |
+|---|---|---|
+| `ingest_sensor_data` | output | Validate and save a full sensor payload |
+| `get_sensor_report` | input | Full report with health score, alerts and maintenance info |
+| `list_active_alerts` | input | Only unresolved alerts for a device |
+| `get_sensor_metrics_summary` | input | Statistical summary (min/max/avg/stdev/trend) of readings |
+
+The service layer lives in [`src/iot_service.py`](src/iot_service.py) and uses stdlib `dataclasses` only — no extra dependencies.
+
+### Data Model
+
+Each sensor device is stored as a single JSON blob under `iot-sensors/<device_id>.json`. The payload is intentionally rich to show how MCP tools handle strings, arrays, and nested objects:
+
+```json
+{
+  "device_id": "sensor-industrial-001",
+  "location": "Plant-A / Zone-3 / Line-2",
+  "timestamp": "2026-03-19T10:30:00Z",
+  "firmware_version": "2.4.1",
+  "status": "operational",
+  "tags": ["critical", "monitored", "area-b"],
+  "metrics": {
+    "temperature_celsius": 72.4,
+    "humidity_percent": 45.2,
+    "pressure_bar": 3.15,
+    "vibration_hz": 120.8,
+    "power_consumption_kw": 18.7
+  },
+  "alerts": [
+    {
+      "code": "TEMP_HIGH",
+      "severity": "warning",
+      "message": "Temperature above threshold",
+      "triggered_at": "2026-03-19T10:28:00Z",
+      "resolved": false
+    }
+  ],
+  "maintenance": {
+    "last_service_date": "2025-12-01",
+    "next_service_date": "2026-06-01",
+    "technician": "Mario Rossi",
+    "notes": "Replaced filter unit B"
+  },
+  "network": {
+    "ip_address": "192.168.10.45",
+    "protocol": "MQTT",
+    "signal_strength_dbm": -67,
+    "connected_gateway": "gw-plant-a-01"
+  },
+  "history_last_5_readings": [71.2, 71.8, 72.0, 72.1, 72.4]
+}
+```
+
+### IoT Source Code
+
+The four MCP tools use `@app.mcp_tool_property()` with explicit `property_type` and `as_array` metadata so MCP clients can present a structured form instead of a free-text field.
+
+#### `ingest_sensor_data` — save a sensor reading
+
+```python
+@app.mcp_tool()
+@app.mcp_tool_property(
+    arg_name="device_id",
+    description="Unique identifier of the IoT device (e.g. sensor-industrial-001).",
+    property_type=func.McpPropertyType.STRING
+)
+@app.mcp_tool_property(
+    arg_name="location",
+    description="Physical location of the device (e.g. Plant-A / Zone-3 / Line-2).",
+    property_type=func.McpPropertyType.STRING
+)
+@app.mcp_tool_property(
+    arg_name="timestamp",
+    description="ISO 8601 timestamp of the reading (e.g. 2026-03-19T10:30:00Z).",
+    property_type=func.McpPropertyType.DATETIME
+)
+@app.mcp_tool_property(
+    arg_name="tags",
+    description='Labels associated with the device (e.g. "critical", "area-b").',
+    property_type=func.McpPropertyType.STRING,
+    as_array=True
+)
+@app.mcp_tool_property(
+    arg_name="metrics",
+    description="Current physical measurements: temperature_celsius, humidity_percent, pressure_bar, vibration_hz, power_consumption_kw.",
+    property_type=func.McpPropertyType.OBJECT
+)
+@app.mcp_tool_property(
+    arg_name="alerts",
+    description="Alert objects: code, severity (info|warning|critical), message, triggered_at, resolved.",
+    property_type=func.McpPropertyType.OBJECT,
+    as_array=True
+)
+@app.mcp_tool_property(
+    arg_name="history_last_5_readings",
+    description="Last temperature readings (up to 10 values), oldest first.",
+    property_type=func.McpPropertyType.FLOAT,
+    as_array=True
+)
+@app.blob_output(arg_name="file", connection="AzureWebJobsStorage", path=_IOT_BLOB_PATH)
+def ingest_sensor_data(file: func.Out[str], device_id: str, ...) -> str:
+    """Validate and save an IoT sensor payload to Azure Blob Storage."""
+    ...
+    sensor = iot_service.validate_payload(data)
+    file.set(sensor.to_json())
+    return f"Payload for device '{device_id}' saved successfully."
+```
+
+Key points:
+- Scalar fields (`device_id`, `location`, `timestamp`, …) use `property_type=func.McpPropertyType.STRING` or `DATETIME`
+- Array fields (`tags`, `alerts`, `history_last_5_readings`) use `as_array=True`
+- Nested objects (`metrics`, `maintenance`, `network`) use `property_type=func.McpPropertyType.OBJECT`
+- The blob path uses `{mcptoolargs.device_id}` so each device gets its own blob
+
+> [!NOTE]
+> If you want to use the IoT MCP tools from VS Code, you may need to temporarily comment out the line that declares `history_last_5_readings` with `property_type=func.McpPropertyType.FLOAT`. In some VS Code startup flows, the MCP server fails to start with an unsupported format/type error for that property. As a workaround, comment out that decorator line, restart the local server, and then use the IoT tools normally.
+
+#### `get_sensor_report` — full report with health score
+
+```python
+@app.mcp_tool()
+@app.mcp_tool_property(
+    arg_name="device_id",
+    description="Unique identifier of the IoT device to generate the report for."
+)
+@app.blob_input(arg_name="file", connection="AzureWebJobsStorage", path=_IOT_BLOB_PATH)
+def get_sensor_report(file: func.InputStream, device_id: str) -> str:
+    """Read IoT sensor data from Azure Blob Storage and return a full report
+    with health score, metrics, active alerts, and maintenance information."""
+    data = json.loads(file.read().decode("utf-8"))
+    sensor = iot_service.validate_payload(data)
+    return json.dumps(iot_service.generate_report(sensor))
+```
+
+The report includes a `health_score` (0–100) decremented by device status and active alert severity, plus `days_to_next_service`.
+
+#### `list_active_alerts` and `get_sensor_metrics_summary`
+
+Both follow the same `blob_input` pattern with `device_id` as the only tool argument:
+
+```python
+@app.mcp_tool()
+@app.mcp_tool_property(arg_name="device_id", description="...")
+@app.blob_input(arg_name="file", connection="AzureWebJobsStorage", path=_IOT_BLOB_PATH)
+def list_active_alerts(file: func.InputStream, device_id: str) -> str:
+    """Return only alerts where resolved=false."""
+    ...
+
+@app.mcp_tool()
+@app.mcp_tool_property(arg_name="device_id", description="...")
+@app.blob_input(arg_name="file", connection="AzureWebJobsStorage", path=_IOT_BLOB_PATH)
+def get_sensor_metrics_summary(file: func.InputStream, device_id: str) -> str:
+    """Return min/max/avg/stdev/trend over the temperature history."""
+    ...
+```
+
+### Try It Out
+
+With the function app running locally, use Copilot agent mode or MCP Inspector to:
+
+```plaintext
+Ingest a reading for device sensor-factory-42 located in Building-C / Floor-2,
+temperature 68.3°C, humidity 52%, pressure 2.9 bar, firmware 1.2.0, status operational.
+```
+
+```plaintext
+Generate a full report for sensor-factory-42.
+```
+
+```plaintext
+List the active alerts for sensor-factory-42.
+```
+
+```plaintext
+Show me the metrics summary for sensor-factory-42.
+```
+
+### IoT Dashboard MCP App
+
+The IoT sample also includes an **MCP App** — an interactive dashboard rendered inside the MCP host when you call `get_sensor_report`. It follows the same Tool + UI Resource pattern as the Weather App.
+
+#### Build the IoT Dashboard UI
+
+```bash
+cd src/iot-app
+npm install
+npm run build
+cd ../
+```
+
+This creates `src/iot-app/dist/index.html`.
+
+#### How It Works
+
+1. `get_sensor_report` declares UI metadata via `@app.mcp_tool(metadata=IOT_TOOL_METADATA)` pointing to `ui://iot/index.html`
+2. `get_iot_dashboard` is an `mcp_resource_trigger` that serves the bundled HTML at that URI
+3. When the MCP host calls `get_sensor_report`, it sees the UI resource and renders the dashboard in a sandboxed iframe
+4. The dashboard shows: health score, live metrics (temp, humidity, pressure, vibration, power), temperature sparkline, active alerts, network info, maintenance schedule, and device tags
+
+#### Try It
+
+With the function app running, ask Copilot:
+
+```plaintext
+Generate a full report for sensor-factory-42.
+```
+
+The agent will call the tool and the host will render the interactive IoT dashboard.
+
+
 ## Next Steps
 
 - Add [API Management](https://aka.ms/mcp-remote-apim-auth) to your MCP server (auth, gateway, policies, more!)

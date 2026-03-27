@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Sensor Dashboard</title>
+    <style>
+        :root {
+            --bg: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            --card: rgba(255,255,255,0.07);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --accent: #38bdf8;
+            --green: #4ade80;
+            --yellow: #fbbf24;
+            --red: #f87171;
+            --orange: #fb923c;
+            --shadow: 0 20px 50px rgba(0,0,0,0.35);
+            --radius: 16px;
+        }
+        [data-theme="light"] {
+            --bg: linear-gradient(145deg, #f1f5f9 0%, #e0e7ff 50%, #f1f5f9 100%);
+            --card: rgba(0,0,0,0.05);
+            --text: #1e293b;
+            --muted: #64748b;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        * { box-sizing: border-box; margin: 0; }
+        body {
+            padding: 20px;
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .dashboard {
+            width: min(780px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ---- Header ---- */
+        .header-card {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-icon {
+            width: 64px; height: 64px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.06);
+            display: grid; place-items: center;
+            font-size: 36px;
+        }
+        .header-info { flex: 1; }
+        .header-info .device-name { font-size: 1.3rem; font-weight: 700; }
+        .header-info .device-location { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
+        .health-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .health-good  { background: rgba(74,222,128,0.15); color: var(--green); }
+        .health-warn  { background: rgba(251,191,36,0.15); color: var(--yellow); }
+        .health-bad   { background: rgba(248,113,113,0.15); color: var(--red); }
+
+        /* ---- Section ---- */
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        /* ---- Metrics grid ---- */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+        }
+        .metric-card {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .metric-label { color: var(--muted); font-size: 0.78rem; margin-bottom: 4px; }
+        .metric-value { font-size: 1.15rem; font-weight: 700; }
+
+        /* ---- History sparkline ---- */
+        .history-card {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+        }
+        .history-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .history-row svg { flex: 1; }
+        .history-stats {
+            display: flex;
+            gap: 18px;
+            font-size: 0.85rem;
+        }
+        .history-stats span { color: var(--muted); }
+        .history-stats strong { color: var(--text); }
+
+        /* ---- Alerts ---- */
+        .alerts-list { display: flex; flex-direction: column; gap: 8px; }
+        .alert-item {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid transparent;
+        }
+        .alert-item.critical { border-left-color: var(--red); }
+        .alert-item.warning  { border-left-color: var(--yellow); }
+        .alert-item.info     { border-left-color: var(--accent); }
+        .alert-icon { font-size: 1.2rem; }
+        .alert-body { flex: 1; }
+        .alert-code { font-weight: 600; font-size: 0.88rem; }
+        .alert-msg  { color: var(--muted); font-size: 0.82rem; margin-top: 1px; }
+        .alert-time { color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+        .no-alerts { color: var(--green); font-weight: 600; }
+
+        /* ---- Info grid ---- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 500px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        .info-card {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+        .info-card .info-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            padding: 3px 0;
+        }
+        .info-row .info-label { color: var(--muted); }
+        .info-row .info-value { font-weight: 600; }
+
+        /* ---- Tags ---- */
+        .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+        .tag {
+            background: rgba(56,189,248,0.12);
+            color: var(--accent);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        /* ---- Footer ---- */
+        .footer {
+            font-size: 0.78rem;
+            color: var(--muted);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="header-card">
+            <div class="header-icon" id="status-icon">📡</div>
+            <div class="header-info">
+                <div class="device-name" id="device-name">IoT Sensor Dashboard</div>
+                <div class="device-location" id="device-location">Waiting for data…</div>
+            </div>
+            <div class="health-badge health-good" id="health-badge">—</div>
+        </div>
+
+        <!-- Metrics -->
+        <div>
+            <div class="section-title">Current Metrics</div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">🌡️ Temperature</div>
+                    <div class="metric-value" id="m-temp">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">💧 Humidity</div>
+                    <div class="metric-value" id="m-humidity">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">🔵 Pressure</div>
+                    <div class="metric-value" id="m-pressure">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">〰️ Vibration</div>
+                    <div class="metric-value" id="m-vibration">—</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">⚡ Power</div>
+                    <div class="metric-value" id="m-power">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temperature History -->
+        <div>
+            <div class="section-title">Temperature History</div>
+            <div class="history-card">
+                <div class="history-row">
+                    <svg id="sparkline" viewBox="0 0 300 60" width="100%" height="60" preserveAspectRatio="none"></svg>
+                </div>
+                <div class="history-stats" id="history-stats"></div>
+            </div>
+        </div>
+
+        <!-- Active Alerts -->
+        <div>
+            <div class="section-title">Active Alerts</div>
+            <div class="alerts-list" id="alerts-list">
+                <div class="no-alerts">No active alerts</div>
+            </div>
+        </div>
+
+        <!-- Network + Maintenance -->
+        <div class="info-grid">
+            <div class="info-card" id="network-card">
+                <div class="info-title">🌐 Network</div>
+                <div class="info-row"><span class="info-label">IP</span><span class="info-value" id="net-ip">—</span></div>
+                <div class="info-row"><span class="info-label">Protocol</span><span class="info-value" id="net-proto">—</span></div>
+                <div class="info-row"><span class="info-label">Signal</span><span class="info-value" id="net-signal">—</span></div>
+                <div class="info-row"><span class="info-label">Gateway</span><span class="info-value" id="net-gw">—</span></div>
+            </div>
+            <div class="info-card" id="maintenance-card">
+                <div class="info-title">🔧 Maintenance</div>
+                <div class="info-row"><span class="info-label">Last service</span><span class="info-value" id="maint-last">—</span></div>
+                <div class="info-row"><span class="info-label">Next service</span><span class="info-value" id="maint-next">—</span></div>
+                <div class="info-row"><span class="info-label">Days left</span><span class="info-value" id="maint-days">—</span></div>
+                <div class="info-row"><span class="info-label">Technician</span><span class="info-value" id="maint-tech">—</span></div>
+            </div>
+        </div>
+
+        <!-- Tags -->
+        <div id="tags-section" style="display:none;">
+            <div class="section-title">Tags</div>
+            <div class="tags" id="tags-list"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer" id="footer">Connecting…</div>
+    </div>
+    <script type="module" src="/iot-dashboard.ts"></script>
+</body>
+</html>
