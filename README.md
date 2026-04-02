@@ -491,6 +491,14 @@ def get_weather_widget(context) -> str:
 
 The frontend in `src/app/src/weather-app.ts` receives the tool result and renders the weather display. It's bundled with Vite into a single `index.html` that the resource serves.
 
+## Troubleshooting
+
+| Error | Solution |
+|---|---|
+| `deployment was partially successful` / `KuduSpecializer` restart during `azd up` | This is a transient error. Run `azd deploy` to retry just the deployment step. |
+| Connection refused | Ensure Azurite is running (`docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`) |
+| API version not supported by Azurite | Pull the latest Azurite image (`docker pull mcr.microsoft.com/azure-storage/azurite`) then restart Azurite and the app |
+
 ## Next Steps
 
 - Add [API Management](https://aka.ms/mcp-remote-apim-auth) to your MCP server (auth, gateway, policies, more!)
