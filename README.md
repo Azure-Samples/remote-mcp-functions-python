@@ -16,7 +16,11 @@ urlFragment: remote-mcp-functions-python
 
 # Getting Started with Remote MCP Servers using Azure Functions (Python)
 
-This is a quickstart template to easily build and deploy a custom remote MCP server to the cloud using Azure Functions with Python. You can clone/restore/run on your local machine with debugging, and `azd up` to have it in the cloud in a couple minutes. The MCP server is secured by design using keys and HTTPS, and allows more options for OAuth using built-in auth and/or [API Management](https://aka.ms/mcp-remote-apim-auth) as well as network isolation using VNET.
+This is a quickstart template to easily build and deploy a custom remote MCP server to the cloud using Azure Functions with Python. You can clone/restore/run on your local machine with debugging, and `azd up` to have it in the cloud in a couple minutes. 
+
+The MCP server is configured with [built-in authentication](https://learn.microsoft.com/en-us/azure/app-service/overview-authentication-authorization) using Microsoft Entra as the identity provider.
+
+You can also use [API Management](https://learn.microsoft.com/azure/api-management/secure-mcp-servers) to secure the server, as well as network isolation using VNET.
 
 If you're looking for this sample in more languages check out the [.NET/C#](https://github.com/Azure-Samples/remote-mcp-functions-dotnet) and [Node.js/TypeScript](https://github.com/Azure-Samples/remote-mcp-functions-typescript) versions.
 
@@ -157,6 +161,12 @@ In the root directory, create a new [azd](https://aka.ms/azd) environment. This 
 azd env new <reource-group-name>
 ```
 
+Configure VS Code as an allowed client application to request access tokens from Microsoft Entra:
+
+```shell
+azd env set PRE_AUTHORIZED_CLIENT_IDS aebc6443-996d-45c2-90f0-388ff96faa56
+```
+
 Run this azd command to provision the function app, with any required Azure resources, and deploy your code:
 
 ```shell
@@ -169,30 +179,14 @@ You can opt-in to a VNet being used in the sample. To do so, do this before `azd
 azd env set VNET_ENABLED true
 ```
 
-Additionally, [API Management](https://aka.ms/mcp-remote-apim-auth) can be used for improved security and policies over your MCP Server, and [App Service built-in authentication](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization) can be used to set up your favorite OAuth provider including Entra.  
-
-## Connect to your *remote* MCP server function app from a client
-
-Your client will need a key in order to invoke the new hosted MCP endpoint, which will be of the form `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp`. The hosted function requires a system key by default which can be obtained from the [portal](https://learn.microsoft.com/azure/azure-functions/function-keys-how-to?tabs=azure-portal) or the CLI (`az functionapp keys list --resource-group <resource_group> --name <function_app_name>`). Obtain the system key named `mcp_extension`.
-
-### Connect to remote MCP server in MCP Inspector
-For MCP Inspector, you can include the key in the URL: 
-```plaintext
-https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp?code=<your-mcp-extension-system-key>
-```
+Additionally, [API Management](https://aka.ms/mcp-remote-apim-auth) can be used for improved security and policies over your MCP Server.
 
 ### Connect to remote MCP server in VS Code - GitHub Copilot
-For GitHub Copilot within VS Code, you should instead set the key as the `x-functions-key` header in `mcp.json`, and you would just use `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp` for the URL. The following example uses an input and will prompt you to provide the key when you start the server from VS Code.  Note [mcp.json](.vscode/mcp.json) has already been included in this repo and will be picked up by VS Code.  Click Start on the server to be prompted for values including `functionapp-name` (in your /.azure/*/.env file) and `functions-mcp-extension-system-key` which can be obtained from CLI command above or API Keys in the portal for the Function App.  
+For GitHub Copilot within VS Code, you would just use `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp` for the URL. Note [mcp.json](.vscode/mcp.json) has already been included in this repo and will be picked up by VS Code.  Click Start on the server to be prompted for values including `functionapp-name` (in your /.azure/*/.env file). The server is configured with buit-in MCP auth, so you'll be asked to login as well. 
 
 ```json
 {
     "inputs": [
-        {
-            "type": "promptString",
-            "id": "functions-mcp-extension-system-key",
-            "description": "Azure Functions MCP Extension System Key",
-            "password": true
-        },
         {
             "type": "promptString",
             "id": "functionapp-name",
@@ -202,40 +196,11 @@ For GitHub Copilot within VS Code, you should instead set the key as the `x-func
     "servers": {
         "remote-mcp-function": {
             "type": "http",
-            "url": "https://${input:functionapp-name}.azurewebsites.net/runtime/webhooks/mcp",
-            "headers": {
-                "x-functions-key": "${input:functions-mcp-extension-system-key}"
-            }
+            "url": "https://${input:functionapp-name}.azurewebsites.net/runtime/webhooks/mcp"
         },
         "local-mcp-function": {
             "type": "http",
             "url": "http://0.0.0.0:7071/runtime/webhooks/mcp"
-        }
-    }
-}
-```
-
-For MCP Inspector, you can include the key in the URL: `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp?code=<your-mcp-extension-system-key>`.
-
-For GitHub Copilot within VS Code, you should instead set the key as the `x-functions-key` header in `mcp.json`, and you would just use `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp` for the URL. The following example uses an input and will prompt you to provide the key when you start the server from VS Code:
-
-```json
-{
-    "inputs": [
-        {
-            "type": "promptString",
-            "id": "functions-mcp-extension-system-key",
-            "description": "Azure Functions MCP Extension System Key",
-            "password": true
-        }
-    ],
-    "servers": {
-        "my-mcp-server": {
-            "type": "http",
-            "url": "<funcappname>.azurewebsites.net/runtime/webhooks/mcp",
-            "headers": {
-                "x-functions-key": "${input:functions-mcp-extension-system-key}"
-            }
         }
     }
 }
@@ -255,6 +220,15 @@ When you're done working with your function app and related resources, you can u
 ```shell
 azd down
 ```
+
+## Troubleshooting
+
+| Error | Solution |
+|---|---|
+| `deployment was partially successful` / `KuduSpecializer` restart during `azd up` | This is a transient error. Run `azd deploy` to retry just the deployment step. |
+| Connection refused | Ensure Azurite is running (`docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`) |
+| API version not supported by Azurite | Pull the latest Azurite image (`docker pull mcr.microsoft.com/azure-storage/azurite`) then restart Azurite and the app |
+
 
 ## Helpful Azure Commands
 
