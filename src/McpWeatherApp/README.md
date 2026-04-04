@@ -1,4 +1,4 @@
-# McpWeatherApp - Interactive Weather MCP App
+# Sample MCP App for weather
 
 This Azure Functions app demonstrates an MCP App that displays weather information with an interactive UI. It showcases how MCP tools can return interactive interfaces instead of plain text.
 
