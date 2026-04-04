@@ -16,9 +16,9 @@ urlFragment: remote-mcp-functions-python
 
 # Getting Started with Remote MCP Servers using Azure Functions (Python)
 
-This is a quickstart template to easily build and deploy a custom remote MCP server to the cloud using Azure Functions with Python. You can clone/restore/run on your local machine with debugging, and `azd up` to have it in the cloud in a couple minutes. 
+This is a quickstart template to easily build and deploy custom remote MCP servers to the cloud using Azure Functions with Python. You can clone/restore/run on your local machine with debugging, and `azd up` to have it in the cloud in a couple minutes. 
 
-The MCP server is configured with [built-in authentication](https://learn.microsoft.com/en-us/azure/app-service/overview-authentication-authorization) using Microsoft Entra as the identity provider.
+The MCP servers are configured with [built-in authentication](https://learn.microsoft.com/en-us/azure/app-service/overview-authentication-authorization) using Microsoft Entra as the identity provider.
 
 You can also use [API Management](https://learn.microsoft.com/azure/api-management/secure-mcp-servers) to secure the server, as well as network isolation using VNET.
 
@@ -28,13 +28,13 @@ If you're looking for this sample in more languages check out the [.NET/C#](http
 
 Below is the architecture diagram for the Remote MCP Server using Azure Functions:
 
-![Architecture Diagram](architecture-diagram.png)
+![Architecture Diagram](/media/architecture-diagram-http.png)
 
 ## Sample Applications
 
 This repository includes two sample MCP applications:
 
-- **[FunctionsMcpTool](src/FunctionsMcpTool/README.md)** - A simple MCP server with tools for managing code snippets using Azure Blob Storage
+- **[FunctionsMcpTool](src/FunctionsMcpTool/README.md)** - An MCP server with sample tools demonstrating various patterns (hello world, snippet management, and more)
 - **[McpWeatherApp](src/McpWeatherApp/README.md)** - An interactive MCP App that displays weather information with a visual UI
 
 See each app's README for detailed setup and usage instructions.
@@ -48,11 +48,11 @@ See each app's README for detailed setup and usage instructions.
   + [Visual Studio Code](https://code.visualstudio.com/)
   + [Azure Functions extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions)
 
-## Quick Start
+## Local testing
 
 Choose the sample app you want to run and follow its README:
 
-- **[FunctionsMcpTool](src/FunctionsMcpTool/README.md)** - Snippet management tools
+- **[FunctionsMcpTool](src/FunctionsMcpTool/README.md)** - Sample tools (hello world, snippets, and more)
 - **[McpWeatherApp](src/McpWeatherApp/README.md)** - Interactive weather UI
 
 Each app's README contains detailed instructions for:
@@ -64,10 +64,29 @@ Each app's README contains detailed instructions for:
 
 ## Deploy to Azure for Remote MCP
 
-In the root directory, create a new [azd](https://aka.ms/azd) environment. This is going to become the resource group of your Azure resources: 
+### Step 1: Choose which app to deploy
+
+This repository contains multiple sample apps. Open [azure.yaml](azure.yaml) and set `project:` to the app you want to deploy:
+
+| App | `project:` value |
+|-----|-----------------|
+| FunctionsMcpTool (default) | `./src/FunctionsMcpTool` |
+| McpWeatherApp | `./src/McpWeatherApp` |
+
+```yaml
+services:
+  api:
+    project: ./src/FunctionsMcpTool    # ← change this to deploy a different app
+    language: python
+    host: function
+```
+
+### Step 2: Create an environment and configure
+
+In the root directory, create a new [azd](https://aka.ms/azd) environment:
 
 ```shell
-azd env new <reource-group-name>
+azd env new <environment-name>
 ```
 
 Configure VS Code as an allowed client application to request access tokens from Microsoft Entra:
@@ -76,29 +95,31 @@ Configure VS Code as an allowed client application to request access tokens from
 azd env set PRE_AUTHORIZED_CLIENT_IDS aebc6443-996d-45c2-90f0-388ff96faa56
 ```
 
+Optional: Enable VNet isolation:
+
+```bash
+azd env set VNET_ENABLED true
+```
+
+### Step 3: Deploy
+
 Run this azd command to provision the function app, with any required Azure resources, and deploy your code:
 
 ```shell
 azd up
 ```
 
-You can opt-in to a VNet being used in the sample. To do so, do this before `azd up`
-
-```bash
-azd env set VNET_ENABLED true
-```
-
 Additionally, [API Management](https://aka.ms/mcp-remote-apim-auth) can be used for improved security and policies over your MCP Server.
 
-### Connect to remote MCP server in VS Code - GitHub Copilot
+### Step 4: Connect to remote MCP server in VS Code
 
 After deployment, connect to your remote MCP server using `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp`. 
 
-The [mcp.json](.vscode/mcp.json) file is already configured with both local and remote server options. Click **Start** on the `remote-mcp-function` server and provide your function app name when prompted. The server uses built-in MCP authentication, so you'll be asked to login.
+The [.vscode/mcp.json](.vscode/mcp.json) file is already configured with both local and remote server options. Click **Start** on the `remote-mcp-function` server and provide your function app name when prompted. The server uses built-in MCP authentication, so you'll be asked to login.
 
 ## Redeploy your code
 
-You can run the `azd up` command as many times as you need to both provision your Azure resources and deploy code updates to your function app.
+You can run the `azd deploy` command as many times as you need to both provision your Azure resources and deploy code updates to your function app.
 
 >[!NOTE]
 >Deployed code files are always overwritten by the latest deployment package.
@@ -116,9 +137,7 @@ azd down
 | Error | Solution |
 |---|---|
 | `deployment was partially successful` / `KuduSpecializer` restart during `azd up` | This is a transient error. Run `azd deploy` to retry just the deployment step. |
-| Connection refused | Ensure Azurite is running (`docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`) |
-| API version not supported by Azurite | Pull the latest Azurite image (`docker pull mcr.microsoft.com/azure-storage/azurite`) then restart Azurite and the app |
-
+| `AttributeError: 'FunctionApp' object has no attribute 'mcp_resource_trigger'` | Python 3.13 is required. Verify with `python3 --version`. Install via `brew install python@3.13` (macOS) or from [python.org](https://www.python.org/downloads/). Recreate your virtual environment with Python 3.13 after installing. |
 
 ## Helpful Azure Commands
 
@@ -135,9 +154,6 @@ echo $RESOURCE_GROUP
 
 # View function app logs
 az webapp log tail --name $FUNCTION_APP_NAME --resource-group $RESOURCE_GROUP
-
-# Redeploy the application without provisioning new resources
-azd deploy
 ```
 
 ## Architecture
@@ -152,11 +168,10 @@ Both patterns use the first-class MCP decorators available in `azure-functions>=
 - Eliminate manual JSON serialization
 - Integrate seamlessly with Azure Functions bindings
 
-See the individual app READMEs for detailed code examples and explanations.
-
 ## Next Steps
 
+- Learn more about the [Azure Functions MCP extension](https://learn.microsoft.com/azure/azure-functions/functions-bindings-mcp?pivots=programming-language-typescript)
 - Add [API Management](https://aka.ms/mcp-remote-apim-auth) to your MCP server (auth, gateway, policies, more!)
-- Add [built-in auth](https://learn.microsoft.com/en-us/azure/app-service/overview-authentication-authorization) to your MCP server
 - Enable VNET using VNET_ENABLED=true flag
-- Learn more about [related MCP efforts from Microsoft](https://github.com/microsoft/mcp/tree/main/Resources)
+
+

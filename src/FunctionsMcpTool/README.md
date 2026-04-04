@@ -1,14 +1,16 @@
-# FunctionsMcpTool - Snippet Management MCP Server
+# FunctionsMcpTool - MCP Server Sample
 
-This Azure Functions app implements a simple MCP server with tools for managing code snippets using Azure Blob Storage.
+This Azure Functions app implements an MCP server that demonstrates various tool patterns. It includes sample tools for connectivity testing, code snippet management with Azure Blob Storage, and more. Additional tools will be added over time to showcase different MCP capabilities.
 
 ## Features
 
-This MCP server provides three tools:
+This MCP server currently provides the following tools:
 
 - **hello_mcp**: A simple hello world tool for testing connectivity
 - **get_snippet**: Retrieve a saved code snippet by name from Azure Blob Storage
 - **save_snippet**: Save a code snippet with a name to Azure Blob Storage
+
+More tools will be added to demonstrate additional MCP patterns and Azure Functions bindings.
 
 ## Prerequisites
 
@@ -31,13 +33,19 @@ docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 \
 
 ### 2. Install Dependencies
 
-From the `src/FunctionsMcpTool` directory:
+From the `src/FunctionsMcpTool` directory, create and activate a virtual environment, then install dependencies:
 
 ```shell
+python3 -m venv .venv
+
+# macOS/Linux
+source .venv/bin/activate    
+
+# Windows
+.venv\Scripts\activate  
+
 pip install -r requirements.txt
 ```
-
-> **Best practice**: Create a virtual environment before installing dependencies to avoid conflicts.
 
 ### 3. Run the Function App
 
@@ -45,16 +53,13 @@ pip install -r requirements.txt
 func start
 ```
 
-The MCP server will be available at `http://0.0.0.0:7071/runtime/webhooks/mcp`.
-
 ## Using the MCP Server
 
 ### Connect from VS Code - GitHub Copilot
 
-1. **Add MCP Server** from the command palette
-2. Add URL: `http://0.0.0.0:7071/runtime/webhooks/mcp`
-3. **List MCP Servers** from the command palette and start the server
-4. In Copilot chat agent mode, try these prompts:
+1. Open [.vscode/mcp.json](../../.vscode/mcp.json)
+2. Find the server called `local-mcp-function` and click **Start**. The server uses the endpoint: `http://localhost:7071/runtime/webhooks/mcp`
+3. In Copilot chat agent mode, try these prompts:
    - "Say Hello"
    - "Save this snippet as snippet1" (with code selected)
    - "Retrieve snippet1 and apply to newFile.py"
@@ -121,12 +126,15 @@ The MCP decorators automatically:
 
 ## Deployment to Azure
 
-To deploy this app to Azure, use `azd up` from the repository root. See the [main README](../../README.md) for complete deployment instructions.
+See [Deploy to Azure for Remote MCP](../../README.md#deploy-to-azure-for-remote-mcp) for deployment instructions. 
+
+## Troubleshooting
 
 ## Troubleshooting
 
 | Error | Solution |
 |---|---|
-| Connection refused | Ensure Azurite is running |
-| API version not supported by Azurite | Pull the latest Azurite image and restart |
+| `AttributeError: 'FunctionApp' object has no attribute 'mcp_resource_trigger'` | Python 3.13 is required. Verify with `python3 --version`. Install via `brew install python@3.13` (macOS) or from [python.org](https://www.python.org/downloads/). Recreate your virtual environment with Python 3.13 after installing. |
+| Connection refused | Ensure Azurite is running (`docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`) |
+| API version not supported by Azurite | Pull the latest Azurite image (`docker pull mcr.microsoft.com/azure-storage/azurite`) then restart Azurite and the app |
 | Blob not found | Verify the snippet was saved successfully and the name matches exactly |

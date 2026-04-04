@@ -2,9 +2,11 @@
 
 This Azure Functions app demonstrates an MCP App that displays weather information with an interactive UI. It showcases how MCP tools can return interactive interfaces instead of plain text.
 
+![Weather tool returning UI](/media/weather-ui.png)
+
 ## What Are MCP Apps?
 
-[MCP Apps](https://blog.modelcontextprotocol.io/posts/2026-01-26-mcp-apps/) let tools return interactive interfaces. When a tool declares a UI resource, the host renders it in a sandboxed iframe where users can interact directly.
+[MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) let tools return interactive interfaces. When a tool declares a UI resource, the host renders it in a sandboxed iframe where users can interact directly.
 
 **MCP Apps = Tool + UI Resource**
 
@@ -39,17 +41,29 @@ npm run build
 
 This creates a bundled `app/dist/index.html` file that the function serves.
 
-### 2. Install Python Dependencies
+### 2. Start Azurite
 
-From the `src/McpWeatherApp` directory:
+An Azure Storage Emulator is needed for the function app to run locally:
 
 ```bash
+docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 \
+    mcr.microsoft.com/azure-storage/azurite
+```
+
+> **Note**: If using the Azurite VS Code extension, run `Azurite: Start` from the command palette.
+
+### 3. Install Python Dependencies
+
+From the `src/McpWeatherApp` directory, create and activate a virtual environment, then install dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate    # macOS/Linux
+.venv\Scripts\activate       # Windows
 pip install -r requirements.txt
 ```
 
-> **Best practice**: Create a virtual environment before installing dependencies to avoid conflicts.
-
-### 3. Run the Function App
+### 4. Run the Function App
 
 ```bash
 func start
@@ -132,7 +146,7 @@ npm run build
 
 ## Deployment to Azure
 
-To deploy this app to Azure, use `azd up` from the repository root. The UI will be automatically bundled and deployed with the function app. See the [main README](../../README.md) for complete deployment instructions.
+See [Deploy to Azure for Remote MCP](../../README.md#deploy-to-azure-for-remote-mcp) for deployment instructions. The UI will be automatically bundled and deployed with the function app. 
 
 ## Weather Service
 
@@ -148,3 +162,11 @@ To customize the weather widget:
 4. Restart the function app with `func start`
 
 You can also extend the weather service to include additional data like forecasts, humidity, wind speed, etc.
+
+## Troubleshooting
+
+| Error | Solution |
+|---|---|
+| `AttributeError: 'FunctionApp' object has no attribute 'mcp_resource_trigger'` | Python 3.13 is required. Verify with `python3 --version`. Install via `brew install python@3.13` (macOS) or from [python.org](https://www.python.org/downloads/). Recreate your virtual environment with Python 3.13 after installing. |
+| Connection refused | Ensure Azurite is running (`docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`) |
+| API version not supported by Azurite | Pull the latest Azurite image (`docker pull mcr.microsoft.com/azure-storage/azurite`) then restart Azurite and the app |
