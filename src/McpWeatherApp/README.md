@@ -2,7 +2,7 @@
 
 This Azure Functions app demonstrates an MCP App that displays weather information with an interactive UI. It showcases how MCP tools can return interactive interfaces instead of plain text.
 
-![Weather tool returning UI](/media/weather-ui.png)
+<img src="/media/weather-ui.png" alt="Weather tool returning UI" width="50%">
 
 ## What Are MCP Apps?
 
