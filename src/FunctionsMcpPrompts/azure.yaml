@@ -3,8 +3,10 @@
 name: remote-mcp-functions-python
 metadata:
   template: remote-mcp-functions-python@1.0.1
+infra: 
+  path: ../../infra
 services:
   api:
-    project: ./src/FunctionsMcpTool
+    project: .
     language: python
     host: function
