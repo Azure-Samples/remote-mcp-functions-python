@@ -1,4 +1,4 @@
-# FunctionsMcpPrompts — MCP Prompts on Azure Functions (Python)
+# FunctionsMcpPrompts — MCP Prompts on Azure Functions (Public preview)
 
 This project is a Python Azure Function app that exposes MCP (Model Context Protocol) prompts as a remote MCP server. Prompts are reusable prompt templates that MCP clients can discover and invoke, optionally with arguments.
 
