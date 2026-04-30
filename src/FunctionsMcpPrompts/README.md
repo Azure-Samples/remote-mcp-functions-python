@@ -60,6 +60,30 @@ func start
 
 The MCP endpoint will be available at `http://localhost:7071/runtime/webhooks/mcp`.
 
+## Using the MCP Server
+
+### Connect from VS Code - GitHub Copilot
+
+1. Open [.vscode/mcp.json](../../.vscode/mcp.json)
+2. Find the server called `local-mcp-function` and click **Start**. The server uses the endpoint: `http://localhost:7071/runtime/webhooks/mcp`
+3. In Copilot chat agent mode, access prompts using the slash command format:
+   - `/mcp.local-mcp-function.code_review_checklist`
+   - `/mcp.local-mcp-function.summarize_content`
+   - `/mcp.local-mcp-function.generate_documentation`
+
+For remote servers, replace the server name accordingly (e.g., `/mcp.remote-mcp-function.code_review_checklist`).
+
+### Connect from MCP Inspector
+
+1. Install and run MCP Inspector:
+   ```shell
+   npx @modelcontextprotocol/inspector
+   ```
+2. Open the URL displayed (e.g., http://0.0.0.0:5173/#resources)
+3. Set transport type to `Streamable HTTP`
+4. Set URL to `http://0.0.0.0:7071/runtime/webhooks/mcp` and **Connect**
+5. **List Prompts**, select a prompt, and **Get Prompt**
+
 ## Deploy to Azure
 
 ```shell
