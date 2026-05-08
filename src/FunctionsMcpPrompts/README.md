@@ -22,21 +22,13 @@ This project is a Python Azure Function app that exposes MCP (Model Context Prot
 
 - [Python](https://www.python.org/downloads/) version 3.13 or higher
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?pivots=programming-language-python#install-the-azure-functions-core-tools) >= `4.8.0`
-- `azure-functions` version 2.2.0b2 or greater
-- .NET SDK (for building the MCP extension)
+- `azure-functions` Python package version **2.2.0b2** or greater (pre-release)
+
+> **Important:** This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The `azure-functions` Python package must also be version `2.2.0b2+` to expose the `mcp_prompt_trigger` decorator.
 
 ## Run locally
 
-### 1. Build the MCP extension
-
-From this directory (`src/FunctionsMcpPrompts`), build the MCP extension:
-
-```shell
-dotnet restore extensions.csproj
-dotnet build extensions.csproj
-```
-
-### 2. Install Dependencies
+### 1. Install Dependencies
 
 Create and activate a virtual environment, then install dependencies:
 
@@ -52,7 +44,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Start the Functions host
+### 2. Start the Functions host
 
 ```shell
 func start
