@@ -3,6 +3,20 @@ import { App } from "@modelcontextprotocol/ext-apps";
 // DOM element helper
 const el = (id: string) => document.getElementById(id)!;
 
+// Top 10 US cities
+const US_CITIES = [
+  "New York",
+  "Los Angeles",
+  "Chicago",
+  "Houston",
+  "Phoenix",
+  "San Francisco",
+  "Miami",
+  "Seattle",
+  "Denver",
+  "Las Vegas",
+];
+
 // Weather data interface
 interface WeatherData {
   Location?: string;
@@ -119,6 +133,83 @@ function parseToolResultContent(content: Array<{ type: string; text?: string }> 
 // Create app instance
 const app = new App({ name: "Weather Widget", version: "1.0.0" });
 
+// Track active city
+let activeCity: string | null = null;
+
+// Build city selector dropdown
+function buildCitySelector(): void {
+  const container = el("city-selector");
+  const select = document.createElement("select");
+  select.className = "city-select";
+  select.id = "city-select";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Select a city…";
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  select.appendChild(placeholder);
+
+  US_CITIES.forEach((city) => {
+    const option = document.createElement("option");
+    option.value = city;
+    option.textContent = city;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", () => {
+    if (select.value) selectCity(select.value);
+  });
+
+  container.appendChild(select);
+}
+
+// Select a city and fetch weather
+async function selectCity(city: string): Promise<void> {
+  activeCity = city;
+
+  // Update dropdown selection
+  const select = document.getElementById("city-select") as HTMLSelectElement;
+  if (select) select.value = city;
+
+  // Show loading state
+  el("widget").classList.add("loading");
+  el("location").textContent = city;
+  el("condition").textContent = "Loading…";
+  el("weather-icon").textContent = "🌤️";
+  el("temperature").textContent = "—";
+  el("humidity").textContent = "—";
+  el("wind").textContent = "—";
+  el("footer").textContent = "Fetching weather…";
+
+  try {
+    const result = await app.callServerTool({
+      name: "get_weather",
+      arguments: { location: city },
+    });
+
+    if (result.isError) {
+      el("condition").textContent = "Error fetching weather";
+      el("weather-icon").textContent = "⚠️";
+    } else {
+      const data = parseToolResultContent(
+        result.content as Array<{ type: string; text?: string }>
+      );
+      if (data) {
+        render(data);
+      } else {
+        el("condition").textContent = "Error parsing weather data";
+      }
+    }
+  } catch (err) {
+    console.error("callServerTool failed:", err);
+    el("condition").textContent = "Failed to fetch weather";
+    el("weather-icon").textContent = "⚠️";
+  } finally {
+    el("widget").classList.remove("loading");
+  }
+}
+
 // Register handlers BEFORE connect (events may occur immediately after connect)
 
 // Handle tool input (arguments passed to the tool)
@@ -148,9 +239,10 @@ app.onhostcontextchanged = (ctx) => {
 
 // Connect to host (auto-detects OpenAI vs MCP environment)
 (async () => {
+  buildCitySelector();
   await app.connect();
 
   // Apply initial theme from host context
   applyTheme(app.getHostContext()?.theme);
-  el("footer").textContent = "Connected";
+  el("footer").textContent = "Select a city above to check the weather";
 })();

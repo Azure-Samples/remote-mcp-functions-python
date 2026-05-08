@@ -74,6 +74,37 @@
         }
         .label { color: var(--muted); font-size: 0.85rem; margin: 0 0 6px; }
         .value { margin: 0; font-size: 1.1rem; font-weight: 600; }
+        .city-selector {
+            margin-bottom: 16px;
+        }
+        .city-select {
+            width: 100%;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            color: var(--text);
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23cbd5e1' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .city-select:hover, .city-select:focus {
+            background: rgba(255,255,255,0.12);
+            border-color: var(--accent);
+            outline: none;
+        }
+        .city-select option {
+            background: #1e293b;
+            color: var(--text);
+        }
+        .loading .header .icon { animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
         .footer {
             margin-top: 12px;
             font-size: 0.82rem;
@@ -82,7 +113,8 @@
     </style>
 </head>
 <body>
-    <div class="widget">
+    <div class="widget" id="widget">
+        <div class="city-selector" id="city-selector"></div>
         <div class="header">
             <div class="icon" id="weather-icon">🌤️</div>
             <div>
