@@ -263,6 +263,7 @@ module monitoring 'br/public:avm/res/insights/component:0.6.0' = {
 // App outputs
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.connectionString
 output AZURE_LOCATION string = location
+output AZURE_RESOURCE_GROUP string = rg.name
 output AZURE_TENANT_ID string = tenant().tenantId
 output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output SERVICE_API_DEFAULT_HOSTNAME string = api.outputs.SERVICE_MCP_DEFAULT_HOSTNAME
