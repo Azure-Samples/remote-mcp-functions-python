@@ -30,18 +30,7 @@ This MCP App provides:
 
 ## Local Development
 
-### 1. Build the UI
-
-The UI must be bundled before running the function app. From the `src/McpWeatherApp/app` directory:
-
-```bash
-npm install
-npm run build
-```
-
-This creates a bundled `app/dist/index.html` file that the function serves.
-
-### 2. Start Azurite
+### 1. Start Azurite
 
 An Azure Storage Emulator is needed for the function app to run locally:
 
@@ -51,6 +40,17 @@ docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 \
 ```
 
 > **Note**: If using the Azurite VS Code extension, run `Azurite: Start` from the command palette.
+
+### 2. Build the UI
+
+The UI must be bundled before running the function app. From the `src/McpWeatherApp/app` directory:
+
+```bash
+npm install
+npm run build
+```
+
+This creates a bundled `app/dist/index.html` file that the function serves.
 
 ### 3. Install Python Dependencies
 

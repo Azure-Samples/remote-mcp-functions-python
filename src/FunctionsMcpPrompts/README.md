@@ -28,7 +28,18 @@ This project is a Python Azure Function app that exposes MCP (Model Context Prot
 
 ## Run locally
 
-### 1. Install Dependencies
+### 1. Start Azurite
+
+An Azure Storage Emulator is needed for the function app to run locally:
+
+```shell
+docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 \
+    mcr.microsoft.com/azure-storage/azurite
+```
+
+> **Note**: If using the Azurite VS Code extension, run `Azurite: Start` from the command palette.
+
+### 2. Install Dependencies
 
 Create and activate a virtual environment, then install dependencies:
 
@@ -44,7 +55,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Start the Functions host
+### 3. Start the Functions host
 
 ```shell
 func start
