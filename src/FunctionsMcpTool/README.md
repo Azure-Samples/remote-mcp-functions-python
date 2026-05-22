@@ -43,8 +43,6 @@ docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 \
     azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
 ```
 
-> **Note**: The `--skipApiVersionCheck` flag is required because the `azure-storage-blob` Python SDK uses a newer API version than Azurite currently supports. If using the Azurite VS Code extension, run `Azurite: Start` from the command palette.
-
 ### 2. Install Dependencies
 
 From the `src/FunctionsMcpTool` directory, create and activate a virtual environment, then install dependencies:
