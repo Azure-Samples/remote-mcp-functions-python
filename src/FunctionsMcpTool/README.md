@@ -1,124 +1,158 @@
-# FunctionsMcpTool - MCP Server Sample
+# FunctionsMcpTool — Remote MCP Server on Azure Functions (Python)
 
-This Azure Functions app implements an MCP server that demonstrates various tool patterns, including rich content responses, structured data, batch operations, and Azure Blob Storage integration. It provides comprehensive examples of MCP capabilities on Azure Functions.
+This project is a Python Azure Function app that exposes multiple MCP (Model Context Protocol) tools as a remote MCP server. It includes tools for snippets, QR code generation, structured metadata, batch operations, and more.
+
+> **Note:** MCP resources are in the [FunctionsMcpResources](../FunctionsMcpResources/) project, and prompts are in the [FunctionsMcpPrompts](../FunctionsMcpPrompts/) project.
 
 > [!NOTE]
 > This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The preview bundle is required because some return types (e.g., `CallToolResult`, `ImageContent`) are not yet supported in the standard bundle.
 
-## Features
+## Tools included
 
-This MCP server provides the following tools organized by category:
-
-### Basic Tools
-
-- **hello_mcp**: Simple hello world tool for testing connectivity
-- **get_snippet**: Retrieve a saved code snippet by name from Azure Blob Storage
-- **save_snippet**: Save a code snippet with a name to Azure Blob Storage
-
-### Rich Content Tools
-
-- **generate_qr_code**: Generates a QR code PNG from text and returns it as base64-encoded `ImageContent` (demonstrates single image response)
-
-### Advanced Snippet Tools
-
-- **get_snippet_with_metadata**: Returns snippet content plus structured JSON metadata (demonstrates `CallToolResult` with content blocks and structured data)
-- **batch_save_snippets**: Saves multiple snippets in a single operation (demonstrates batch/array tool inputs)
-- **save_snippet_structured**: Saves a snippet and returns a structured `Snippet` object (demonstrates POCO/dataclass pattern)
+| Tool | Description |
+|------|-------------|
+| `hello_mcp` | Simple hello world tool |
+| `get_snippet` | Retrieves a code snippet from blob storage |
+| `save_snippet` | Saves a code snippet to blob storage |
+| `generate_qr_code` | Generates a QR code image from text |
+| `get_snippet_with_metadata` | Retrieves a snippet with structured metadata |
+| `batch_save_snippets` | Saves multiple snippets at once |
+| `save_snippet_structured` | Saves a snippet and returns a structured dataclass |
 
 ## Prerequisites
 
 - [Python](https://www.python.org/downloads/) version 3.13 or higher
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?pivots=programming-language-python#install-the-azure-functions-core-tools) >= `4.8.0`
-- Azure Storage Emulator (Azurite) for local development
+- [Azure Developer CLI (azd)](https://aka.ms/azd) **1.23.x or above** (for deployment)
+- [Docker](https://www.docker.com/) (for the Azurite storage emulator)
 
-## Local Development
+## Prepare your local environment
 
-### 1. Start Azurite
-
-An Azure Storage Emulator is needed to store snippets locally:
+An Azure Storage Emulator is needed because the snippet tools save and retrieve blobs from storage. Start Azurite:
 
 ```shell
-docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 \
+docker run -d -p 10000:10000 -p 10001:10001 -p 10002:10002 \
     mcr.microsoft.com/azure-storage/azurite \
     azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
 ```
 
-### 2. Install Dependencies
+> If you use the Azurite VS Code extension instead, run **Azurite: Start** now.
 
-From the `src/FunctionsMcpTool` directory, create and activate a virtual environment, then install dependencies:
+## Run locally
+
+### 1. Install dependencies
+
+From this directory (`src/FunctionsMcpTool`), create and activate a virtual environment, then install dependencies:
 
 ```shell
 python3 -m venv .venv
-
-# macOS/Linux
-source .venv/bin/activate    
-
-# Windows
-.venv\Scripts\activate  
-
+source .venv/bin/activate    # macOS/Linux
+.venv\Scripts\activate       # Windows
 pip install -r requirements.txt
 ```
 
-### 3. Run the Function App
+### 2. Start the Functions host
 
 ```shell
 func start
 ```
 
-## Using the MCP Server
+## Connect to the MCP server
 
-### Connect from VS Code - GitHub Copilot
+### Option A: VS Code with GitHub Copilot
 
-1. Open [.vscode/mcp.json](../../.vscode/mcp.json)
-2. Find the server called `local-mcp-function` and click **Start**. The server uses the endpoint: `http://localhost:7071/runtime/webhooks/mcp`
-3. In Copilot chat agent mode, try these prompts:
-   
-   **Basic Tools:**
-   - "Say Hello"
-   - "Save this snippet as snippet1" (with code selected)
-   - "Retrieve snippet1 and apply to newFile.py"
-   
-   **Rich Content Tools:**
-   - "Generate a QR code for https://example.com"
-   
-   **Advanced Tools:**
-   - "Get snippet1 with metadata"
-   - "Batch save these snippets: [{'name': 'test1', 'content': 'code1'}, {'name': 'test2', 'content': 'code2'}]"
+1. Open **`.vscode/mcp.json`** in the workspace root. Find the server called **`local-mcp-function`** and click **Start** above the name. It points to:
 
-### Connect from MCP Inspector
+   ```
+   http://localhost:7071/runtime/webhooks/mcp
+   ```
 
-1. Install and run MCP Inspector:
+2. In Copilot chat **agent** mode, try prompts like:
+
+   ```
+   Say Hello
+   ```
+
+   ```
+   Save this snippet as snippet1
+   ```
+
+   ```
+   Retrieve snippet1 and apply to NewFile.py
+   ```
+
+3. When prompted to run a tool, consent by clicking **Continue**.
+
+4. Press `Ctrl+C` in the terminal to stop the function host when done.
+
+### Option B: MCP Inspector
+
+1. In a new terminal, install and run MCP Inspector:
+
    ```shell
    npx @modelcontextprotocol/inspector
    ```
-2. Open the URL displayed (e.g., http://0.0.0.0:5173/#resources)
-3. Set transport type to `Streamable HTTP`
-4. Set URL to `http://0.0.0.0:7071/runtime/webhooks/mcp` and **Connect**
-5. **List Tools**, select a tool, and **Run Tool**
 
-## Verify Local Storage
+2. Open the Inspector URL (e.g. `http://0.0.0.0:5173/#resources`).
+3. Set the transport type to **Streamable HTTP**.
+4. Set the URL to `http://0.0.0.0:7071/runtime/webhooks/mcp` and click **Connect**.
+5. Click **List Tools**, select a tool, and **Run Tool**.
 
-After saving snippets, verify they're stored in Azurite:
+## Deploy to Azure
 
-### Using Azure Storage Explorer
-
-1. Open Azure Storage Explorer
-2. Navigate to **Emulator & Attached** → **Storage Accounts** → **(Emulator - Default Ports) (Key)**
-3. Go to **Blob Containers** → **snippets**
-4. View your saved snippet blobs
-
-### Using Azure CLI
+### Step 1: Sign in
 
 ```shell
-# List blobs in the snippets container
-az storage blob list --container-name snippets --connection-string "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+az login
+azd auth login
 ```
 
-## How It Works
+### Step 2: Create an environment
 
-The function uses Azure Functions' first-class MCP decorators to expose tools:
+```shell
+azd env new <environment-name>
+```
 
-### Basic Tool Example
+This also becomes the resource group name.
+
+### Step 3: Provision and deploy
+
+By default, OAuth-based authentication is enabled using the [built-in MCP auth feature](https://learn.microsoft.com/azure/app-service/configure-authentication-mcp?toc=/azure/azure-functions/toc.json&bc=/azure/azure-functions/breadcrumb/toc.json) with Microsoft Entra as the identity provider.
+
+Configure VS Code as an allowed client application for Microsoft Entra:
+
+```shell
+azd env set PRE_AUTHORIZED_CLIENT_IDS aebc6443-996d-45c2-90f0-388ff96faa56
+```
+
+Optionally enable VNet isolation:
+
+```shell
+azd env set VNET_ENABLED true
+```
+
+Deploy the project. When prompted, pick your subscription and an Azure region.
+
+```shell
+azd up
+```
+
+### Step 4: Connect to the remote MCP server
+
+Open **`.vscode/mcp.json`** and click **Start** above **`remote-mcp-function`**. You'll be prompted for `functionapp-name` — find it in your `azd` command output or the `.azure/<env>/.env` file. Since authentication is enabled, you'll also be prompted to sign in with Microsoft.
+
+> **Tip:** Click **More... → Show Output** above the server name to see request/response details.
+
+### Redeploy and clean up
+
+- **Redeploy:** `azd deploy`
+- **Clean up all resources:** `azd down`
+
+## Examining the code
+
+Each tool is a Python function with an `@app.mcp_tool()` decorator that exposes it as an MCP tool:
+
+### Basic Tool
 
 ```python
 @app.mcp_tool()
@@ -139,14 +173,13 @@ def get_snippet(file: func.InputStream, snippetname: str) -> str:
     return snippet_content
 ```
 
-### Rich Content Response - Single Image
+### Rich Content Response — Single Image
 
 ```python
 @app.mcp_tool()
 @app.mcp_tool_property(arg_name="text", description="The text to encode in the QR code.", required=True)
 def generate_qr_code(text: str) -> ImageContent:
     """Generates a QR code PNG and returns it as a base64-encoded image."""
-    # Generate QR code...
     return ImageContent(
         type="image",
         data=base64.b64encode(png_bytes).decode('utf-8'),
@@ -154,80 +187,11 @@ def generate_qr_code(text: str) -> ImageContent:
     )
 ```
 
-### Structured Content with Metadata
-
-```python
-@app.mcp_tool()
-@app.mcp_tool_property(arg_name="snippetname", description="The name of the snippet.", required=True)
-def get_snippet_with_metadata(snippetname: str) -> Dict[str, Any]:
-    """Returns both content blocks and structured metadata."""
-    metadata = {
-        "name": snippetname,
-        "found": snippet_content is not None,
-        "character_count": len(snippet_content) if snippet_content else 0,
-        "retrieved_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    return {
-        "content": [
-            {"type": "text", "text": snippet_content or "Not found"},
-            {"type": "text", "text": json.dumps(metadata, indent=2)}
-        ],
-        "structured_content": metadata
-    }
-```
-
-### Batch Operations
-
-```python
-@app.mcp_tool()
-@app.mcp_tool_property(
-    arg_name="snippet_items",
-    description="Array of snippet objects with 'name' and 'content' properties",
-    required=True
-)
-async def batch_save_snippets(snippet_items: List[Dict[str, str]]) -> str:
-    """Saves multiple snippets in a single operation."""
-    # Save each snippet to blob storage...
-    return json.dumps({
-        "message": f"Successfully saved {len(saved_snippets)} snippets",
-        "snippets": saved_snippets
-    })
-```
-
-### Structured Data Class (POCO Pattern)
-
-```python
-@dataclass
-class Snippet:
-    """Snippet model for structured content."""
-    name: str
-    content: Optional[str] = None
-
-@app.mcp_tool()
-@app.mcp_tool_property(arg_name="name", description="The name of the snippet", required=True)
-@app.mcp_tool_property(arg_name="content", description="The code snippet content", required=True)
-def save_snippet_structured(name: str, content: str) -> Snippet:
-    """Returns a structured dataclass instance."""
-    # Save to storage...
-    return Snippet(name=name, content=content)
-```
-
-The MCP decorators automatically:
-- Infer tool properties from function signatures and type hints
-- Handle JSON serialization for rich content types
-- Support batch operations with array/object inputs
-- Expose the functions as MCP tools without manual configuration
-
-## Deployment to Azure
-
-See [Deploy to Azure for Remote MCP](../../README.md#deploy-to-azure-for-remote-mcp) for deployment instructions. 
-
 ## Troubleshooting
 
-| Error | Solution |
-|---|---|
-| `AttributeError: 'FunctionApp' object has no attribute 'mcp_resource_trigger'` | Python 3.13 is required. Verify with `python3 --version`. Install via `brew install python@3.13` (macOS) or from [python.org](https://www.python.org/downloads/). Recreate your virtual environment with Python 3.13 after installing. |
-| Connection refused | Ensure Azurite is running with `--skipApiVersionCheck` flag |
-| API version not supported by Azurite | Add `--skipApiVersionCheck` flag to the Azurite command, or pull the latest Azurite image |
-| Blob not found | Verify the snippet was saved successfully and the name matches exactly |
+| Problem | Solution |
+|---------|----------|
+| Connection refused locally | Ensure Azurite is running (`docker run -p 10000:10000 ...`) |
+| API version not supported by Azurite | Add `--skipApiVersionCheck` flag to the Azurite command, or pull the latest image |
+| `AttributeError: 'FunctionApp' object has no attribute 'mcp_resource_trigger'` | Python 3.13 is required. Verify with `python3 --version`. |
+| `azd up` provision succeeded but deploy failed | Transient error — run `azd deploy` again |
