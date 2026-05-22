@@ -23,28 +23,28 @@ This project is a Python Azure Function app that exposes MCP (Model Context Prot
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?pivots=programming-language-python#install-the-azure-functions-core-tools) >= `4.5.0`
 - [Docker](https://www.docker.com/) (for the Azurite storage emulator — needed by the snippet resource template)
 
+> **Important:** This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The preview bundle is required because resource templates with URI parameters (e.g., `snippet://{Name}`) are not yet supported in the standard bundle.
+
 ## Run locally
 
 ### 1. Start Azurite (required for the snippet resource which uses blob storage)
 
 ```bash
 docker run -d -p 10000:10000 -p 10001:10001 -p 10002:10002 \
-  mcr.microsoft.com/azure-storage/azurite
+  mcr.microsoft.com/azure-storage/azurite \
+  azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
 ```
 
-### 2. Upload sample snippets to Azurite
+> **Note:** The `--skipApiVersionCheck` flag is required because the `azure-storage-blob` Python SDK uses a newer API version than Azurite currently supports.
 
-Once Azurite is running, you need to upload the sample snippet files to blob storage. You can use [Azure Storage Explorer](https://azure.microsoft.com/features/storage-explorer/) or the Azure CLI:
+### 2. Install dependencies
+
+Create and activate a virtual environment, then install dependencies:
 
 ```bash
-# Using Azure CLI with Azurite connection string
-az storage container create --name snippets \
-  --connection-string "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
-
-# Upload sample snippets
-az storage blob upload-batch --source ../../__queuestorage__/snippets \
-  --destination snippets \
-  --connection-string "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ### 3. Start the Functions host
@@ -55,7 +55,29 @@ From this directory (`src/FunctionsMcpResources`), start the Functions host:
 func start
 ```
 
-The MCP endpoint will be available at `http://localhost:7073/runtime/webhooks/mcp`.
+The MCP endpoint will be available at `http://localhost:7071/runtime/webhooks/mcp`.
+
+### 4. Seed a snippet using the `save_snippet` tool
+
+This project includes a `save_snippet` MCP tool that writes snippets to blob storage. Use it to seed data before reading resources. For example, from VS Code Chat or MCP Inspector:
+
+> "Save a snippet called HelloWorld with the content: print('Hello, World!')"
+
+This creates a blob at `snippets/HelloWorld.json` which can then be read via the `snippet://HelloWorld` resource.
+
+## Connect from VS Code
+
+The [.vscode/mcp.json](../../.vscode/mcp.json) in the workspace root is already configured with a local server entry pointing to `http://localhost:7071/runtime/webhooks/mcp`. Click **Start** above the `local-mcp-function` server name.
+
+MCP resources are attached as context in VS Code Chat (they aren't invoked like tools or prompts):
+
+1. Open the **Chat** panel.
+2. Click the **+** (Attach) button in the chat input.
+3. Select **MCP Resources**.
+4. Choose a resource:
+   - **`ServerInfo`** — no parameters needed. Returns server name, version, runtime, and timestamp.
+   - **`Snippet`** — enter a snippet name (e.g., `HelloWorld`). Reads the matching blob from storage.
+5. The resource content is attached to the conversation as context for the model.
 
 ## Deploy to Azure
 
@@ -204,13 +226,15 @@ curl -X POST http://localhost:7073/runtime/webhooks/mcp \
 
 ## Sample snippets
 
-Three sample snippets are included in `__queuestorage__/snippets/`:
+You can seed any JSON snippet into blob storage. The snippet name is determined by the blob filename (without the `.json` extension). For example, uploading `HelloWorld.json` makes it available at `snippet://HelloWorld`.
 
-1. **HelloWorld.json** - A simple Hello World function
-2. **QuickSort.json** - QuickSort algorithm implementation
-3. **FibonacciSequence.json** - Fibonacci sequence generator
+Example snippet format:
 
-You can add more snippets by creating JSON files in the same format and uploading them to the blob storage container.
+```json
+{"name": "HelloWorld", "language": "python", "code": "print('Hello, World!')"}
+```
+
+You can add more snippets by creating JSON files and uploading them to the `snippets` blob container.
 
 ## Related documentation
 

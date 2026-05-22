@@ -2,6 +2,8 @@
 
 This Azure Functions app implements an MCP server that demonstrates various tool patterns, including rich content responses, structured data, batch operations, and Azure Blob Storage integration. It provides comprehensive examples of MCP capabilities on Azure Functions.
 
+> **Important:** This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The preview bundle is required because some return types (e.g., `CallToolResult`, `ImageContent`) are not yet supported in the standard bundle.
+
 ## Features
 
 This MCP server provides the following tools organized by category:
@@ -15,12 +17,10 @@ This MCP server provides the following tools organized by category:
 ### Rich Content Tools
 
 - **generate_qr_code**: Generates a QR code PNG from text and returns it as base64-encoded `ImageContent` (demonstrates single image response)
-- **generate_badge**: Creates an SVG status badge and returns it with a text description (demonstrates multiple `ContentBlock` responses)
-- **get_website_preview**: Fetches a website's title/description and returns it with a `ResourceLink` (demonstrates `TextContent` + `ResourceLinkBlock`)
 
 ### Advanced Snippet Tools
 
-- **get_snippet_with_metadata**: Returns snippet content plus structured JSON metadata (demonstrates content blocks with structured data)
+- **get_snippet_with_metadata**: Returns snippet content plus structured JSON metadata (demonstrates `CallToolResult` with content blocks and structured data)
 - **batch_save_snippets**: Saves multiple snippets in a single operation (demonstrates batch/array tool inputs)
 - **save_snippet_structured**: Saves a snippet and returns a structured `Snippet` object (demonstrates POCO/dataclass pattern)
 
@@ -38,10 +38,11 @@ An Azure Storage Emulator is needed to store snippets locally:
 
 ```shell
 docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 \
-    mcr.microsoft.com/azure-storage/azurite
+    mcr.microsoft.com/azure-storage/azurite \
+    azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
 ```
 
-> **Note**: If using the Azurite VS Code extension, run `Azurite: Start` from the command palette.
+> **Note**: The `--skipApiVersionCheck` flag is required because the `azure-storage-blob` Python SDK uses a newer API version than Azurite currently supports. If using the Azurite VS Code extension, run `Azurite: Start` from the command palette.
 
 ### 2. Install Dependencies
 
@@ -80,8 +81,6 @@ func start
    
    **Rich Content Tools:**
    - "Generate a QR code for https://example.com"
-   - "Create a badge with label 'build' and value 'passing'"
-   - "Get a preview of https://github.com"
    
    **Advanced Tools:**
    - "Get snippet1 with metadata"
@@ -156,24 +155,6 @@ def generate_qr_code(text: str) -> ImageContent:
     )
 ```
 
-### Rich Content Response - Multiple Content Blocks
-
-```python
-@app.mcp_tool()
-@app.mcp_tool_property(arg_name="label", description="The label text for the badge.", required=True)
-@app.mcp_tool_property(arg_name="value", description="The value text for the badge.", required=True)
-def generate_badge(label: str, value: str, color: str = "#4CAF50") -> List[ContentBlock]:
-    """Generates an SVG badge and returns it alongside a text description."""
-    return [
-        TextContent(type="text", text=f"Badge: {label} — {value}"),
-        ImageContent(
-            type="image",
-            data=base64.b64encode(svg.encode('utf-8')).decode('utf-8'),
-            mimeType="image/svg+xml"
-        )
-    ]
-```
-
 ### Structured Content with Metadata
 
 ```python
@@ -245,11 +226,9 @@ See [Deploy to Azure for Remote MCP](../../README.md#deploy-to-azure-for-remote-
 
 ## Troubleshooting
 
-## Troubleshooting
-
 | Error | Solution |
 |---|---|
 | `AttributeError: 'FunctionApp' object has no attribute 'mcp_resource_trigger'` | Python 3.13 is required. Verify with `python3 --version`. Install via `brew install python@3.13` (macOS) or from [python.org](https://www.python.org/downloads/). Recreate your virtual environment with Python 3.13 after installing. |
-| Connection refused | Ensure Azurite is running (`docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`) |
-| API version not supported by Azurite | Pull the latest Azurite image (`docker pull mcr.microsoft.com/azure-storage/azurite`) then restart Azurite and the app |
+| Connection refused | Ensure Azurite is running with `--skipApiVersionCheck` flag |
+| API version not supported by Azurite | Add `--skipApiVersionCheck` flag to the Azurite command, or pull the latest Azurite image |
 | Blob not found | Verify the snippet was saved successfully and the name matches exactly |

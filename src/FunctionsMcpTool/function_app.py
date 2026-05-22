@@ -2,14 +2,13 @@ import logging
 import base64
 import json
 import os
-import re
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from typing import Optional
 from io import BytesIO
 
 import azure.functions as func
-from mcp.types import ImageContent, TextContent, ContentBlock, ResourceLink, CallToolResult
+from mcp.types import ImageContent, TextContent, CallToolResult
 from azure.storage.blob import BlobServiceClient
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
@@ -94,88 +93,6 @@ def generate_qr_code(text: str) -> ImageContent:
     )
 
 
-@app.mcp_tool()
-@app.mcp_tool_property(arg_name="label", description="The label text for the badge.", is_required=True)
-@app.mcp_tool_property(arg_name="value", description="The value text for the badge.", is_required=True)
-@app.mcp_tool_property(arg_name="color", description="The hex color for the value section (e.g., '#4CAF50').", is_required=False)
-def generate_badge(label: str, value: str, color: str = "#4CAF50") -> List[ContentBlock]:
-    """Demonstrates returning multiple content blocks (List[ContentBlock]). Generates an SVG status badge and returns it alongside a text description."""
-    logging.info(f"Generating badge: {label} | {value}")
-    
-    label_width = len(label) * 7 + 12
-    value_width = len(value) * 7 + 12
-    total_width = label_width + value_width
-    
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="20">
-  <rect width="{label_width}" height="20" fill="#555"/>
-  <rect x="{label_width}" width="{value_width}" height="20" fill="{color}"/>
-  <text x="{label_width // 2}" y="14" fill="#fff" text-anchor="middle"
-        font-family="Verdana,sans-serif" font-size="11">{label}</text>
-  <text x="{label_width + value_width // 2}" y="14" fill="#fff" text-anchor="middle"
-        font-family="Verdana,sans-serif" font-size="11">{value}</text>
-</svg>"""
-    
-    return [
-        TextContent(type="text", text=f"Badge: {label} — {value}"),
-        ImageContent(
-            type="image",
-            data=base64.b64encode(svg.encode('utf-8')).decode('utf-8'),
-            mimeType="image/svg+xml"
-        )
-    ]
-
-
-@app.mcp_tool()
-@app.mcp_tool_property(arg_name="url", description="The URL of the website to preview.", is_required=True)
-async def get_website_preview(url: str) -> List[ContentBlock]:
-    """Demonstrates returning TextContentBlock and ResourceLinkBlock together. Fetches basic metadata from a URL and returns it with a resource link."""
-    import aiohttp
-    import html
-    
-    logging.info(f"Fetching website preview for {url}")
-    
-    # Ensure URL has a protocol
-    if not url.startswith(('http://', 'https://')):
-        url = f'https://{url}'
-        logging.info(f"Added https:// protocol to URL: {url}")
-    
-    title = url
-    description = "No description available."
-    
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=10), 
-                                  headers={"User-Agent": "MCPTool/1.0"}) as response:
-                html_content = await response.text()
-                
-                # Extract title
-                title_match = re.search(r'<title[^>]*>(.*?)</title>', html_content, re.IGNORECASE)
-                if title_match:
-                    title = html.unescape(title_match.group(1)).strip()
-                
-                # Extract description
-                desc_match = re.search(
-                    r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']*)["\'\']',
-                    html_content,
-                    re.IGNORECASE
-                )
-                if desc_match:
-                    description = html.unescape(desc_match.group(1)).strip()
-    
-    except Exception as ex:
-        logging.warning(f"Failed to fetch metadata for {url}: {ex}")
-        description = f"Could not fetch metadata: {str(ex)}"
-    
-    return [
-        TextContent(type="text", text=f"{title}\n\n{description}"),
-        ResourceLink(
-            type="resource_link",
-            uri=url,
-            name=title,
-            description=description
-        )
-    ]
-
 
 # ============================================================================
 # Snippet Data Class
@@ -220,9 +137,14 @@ def get_snippet_with_metadata(snippetname: str) -> CallToolResult:
     # Try to read the snippet from blob storage
     snippet_content = None
     try:
-        connection_string = os.environ.get("AzureWebJobsStorage")
-        if connection_string:
-            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        blob_service_uri = os.environ.get("AzureWebJobsStorage__blobServiceUri")
+        
+        if blob_service_uri:
+            from azure.identity import DefaultAzureCredential
+            credential = DefaultAzureCredential(
+                managed_identity_client_id=os.environ.get("AzureWebJobsStorage__clientId")
+            )
+            blob_service_client = BlobServiceClient(blob_service_uri, credential=credential)
             container_client = blob_service_client.get_container_client("snippets")
             blob_client = container_client.get_blob_client(f"{snippetname}.json")
             
@@ -288,13 +210,17 @@ def batch_save_snippets(snippet_items) -> str:
     logging.info(f"Batch saving {len(snippet_items)} snippets")
     
     try:
-        connection_string = os.environ.get("AzureWebJobsStorage")
-        if not connection_string:
+        blob_service_uri = os.environ.get("AzureWebJobsStorage__blobServiceUri")
+        if not blob_service_uri:
             return json.dumps({
-                "error": "AzureWebJobsStorage connection string not configured"
+                "error": "AzureWebJobsStorage__blobServiceUri not configured"
             })
         
-        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        from azure.identity import DefaultAzureCredential
+        credential = DefaultAzureCredential(
+            managed_identity_client_id=os.environ.get("AzureWebJobsStorage__clientId")
+        )
+        blob_service_client = BlobServiceClient(blob_service_uri, credential=credential)
         container_client = blob_service_client.get_container_client("snippets")
         
         # Create container if it doesn't exist
@@ -361,12 +287,19 @@ def save_snippet_structured(name: str, content: str) -> Snippet:
     
     # Save to blob storage
     try:
-        connection_string = os.environ.get("AzureWebJobsStorage")
-        if connection_string:
-            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-            container_client = blob_service_client.get_container_client("snippets")
-            blob_client = container_client.get_blob_client(f"{name}.json")
-            blob_client.upload_blob(content, overwrite=True)
+        blob_service_uri = os.environ.get("AzureWebJobsStorage__blobServiceUri")
+        if not blob_service_uri:
+            logging.warning("AzureWebJobsStorage__blobServiceUri not configured")
+            return Snippet(name=name, content=content)
+        
+        from azure.identity import DefaultAzureCredential
+        credential = DefaultAzureCredential(
+            managed_identity_client_id=os.environ.get("AzureWebJobsStorage__clientId")
+        )
+        blob_service_client = BlobServiceClient(blob_service_uri, credential=credential)
+        container_client = blob_service_client.get_container_client("snippets")
+        blob_client = container_client.get_blob_client(f"{name}.json")
+        blob_client.upload_blob(content, overwrite=True)
     except Exception as ex:
         logging.warning(f"Could not save to blob storage: {ex}")
     

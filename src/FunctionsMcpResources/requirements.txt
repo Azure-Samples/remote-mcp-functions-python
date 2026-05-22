@@ -4,3 +4,4 @@
 
 azure-functions
 azure-storage-blob
+azure-identity

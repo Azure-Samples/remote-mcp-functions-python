@@ -15,12 +15,17 @@ from datetime import datetime, timezone
 
 import azure.functions as func
 from azure.storage.blob import BlobServiceClient
+from azure.identity import DefaultAzureCredential
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 # ============================================================================
-# Resource URI and Metadata Constants
+# Constants
 # ============================================================================
+
+# Blob path for snippet tools
+_SNIPPET_NAME_PROPERTY_NAME = "snippetname"
+_BLOB_PATH = "snippets/{mcptoolargs." + _SNIPPET_NAME_PROPERTY_NAME + "}.json"
 
 # Snippet Resource Template (has URI parameter {Name})
 SNIPPET_RESOURCE_URI = "snippet://{Name}"
@@ -36,6 +41,26 @@ SERVER_INFO_MIME_TYPE = "application/json"
 
 # Metadata for ServerInfo resource (cache TTL)
 SERVER_INFO_METADATA = json.dumps({"cache": {"ttlSeconds": 60}})
+
+# ============================================================================
+# Tool: Save Snippet
+# ============================================================================
+
+@app.mcp_tool()
+@app.mcp_tool_property(arg_name="snippetname", description="The name of the snippet.")
+@app.mcp_tool_property(arg_name="snippet", description="The content of the snippet.")
+@app.blob_output(arg_name="file", connection="AzureWebJobsStorage", path=_BLOB_PATH)
+def save_snippet(file: func.Out[str], snippetname: str, snippet: str) -> str:
+    """Save a snippet with a name to Azure Blob Storage."""
+    if not snippetname:
+        return "No snippet name provided"
+
+    if not snippet:
+        return "No snippet content provided"
+
+    file.set(snippet)
+    logging.info(f"Saved snippet '{snippetname}'")
+    return f"Snippet '{snippetname}' saved successfully"
 
 # ============================================================================
 # Resource Template: Snippet
@@ -65,12 +90,16 @@ def get_snippet_resource(context) -> str:
     Returns:
         JSON string containing the snippet content or an error message
     """
-    logging.info(f"Snippet resource template invoked: {context.uri}")
+    logging.info(f"Snippet resource template invoked: {context}")
     
     try:
+        # Parse the context JSON to extract the URI
+        context_data = json.loads(context)
+        uri = context_data.get("uri", "")
+        
         # Extract the Name parameter from the URI (e.g., "snippet://HelloWorld" -> "HelloWorld")
         # The URI pattern is "snippet://{Name}"
-        match = re.match(r"snippet://(.+)", context.uri)
+        match = re.match(r"snippet://(.+)", uri)
         if not match:
             error_response = {
                 "error": "Invalid URI",
@@ -81,17 +110,19 @@ def get_snippet_resource(context) -> str:
         snippet_name = match.group(1)
         logging.info(f"Extracted snippet name: {snippet_name}")
         
-        # Get the blob storage connection string
-        connection_string = os.environ.get("AzureWebJobsStorage")
-        if not connection_string:
+        # Create blob service client using DefaultAzureCredential (supports managed identity in Azure, CLI locally)
+        blob_service_uri = os.environ.get("AzureWebJobsStorage__blobServiceUri")
+        if not blob_service_uri:
             error_response = {
                 "error": "Configuration error",
-                "message": "AzureWebJobsStorage connection string not found"
+                "message": "AzureWebJobsStorage__blobServiceUri not configured"
             }
             return json.dumps(error_response)
         
-        # Create blob service client and read the blob
-        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        credential = DefaultAzureCredential(
+            managed_identity_client_id=os.environ.get("AzureWebJobsStorage__clientId")
+        )
+        blob_service_client = BlobServiceClient(blob_service_uri, credential=credential)
         container_client = blob_service_client.get_container_client("snippets")
         blob_client = container_client.get_blob_client(f"{snippet_name}.json")
         

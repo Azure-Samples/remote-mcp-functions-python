@@ -4,6 +4,6 @@
 
 azure-functions>=2.2.0b3
 qrcode[pil]
-aiohttp
 azure-storage-blob
+azure-identity
 mcp
