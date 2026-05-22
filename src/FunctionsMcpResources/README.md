@@ -23,7 +23,8 @@ This project is a Python Azure Function app that exposes MCP (Model Context Prot
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?pivots=programming-language-python#install-the-azure-functions-core-tools) >= `4.5.0`
 - [Docker](https://www.docker.com/) (for the Azurite storage emulator — needed by the snippet resource template)
 
-> **Important:** This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The preview bundle is required because resource templates with URI parameters (e.g., `snippet://{Name}`) are not yet supported in the standard bundle.
+> [!NOTE]
+> This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The preview bundle is required because resource templates with URI parameters (e.g., `snippet://{Name}`) are not yet supported in the standard bundle.
 
 ## Run locally
 

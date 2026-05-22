@@ -2,7 +2,8 @@
 
 This Azure Functions app implements an MCP server that demonstrates various tool patterns, including rich content responses, structured data, batch operations, and Azure Blob Storage integration. It provides comprehensive examples of MCP capabilities on Azure Functions.
 
-> **Important:** This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The preview bundle is required because some return types (e.g., `CallToolResult`, `ImageContent`) are not yet supported in the standard bundle.
+> [!NOTE]
+> This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The preview bundle is required because some return types (e.g., `CallToolResult`, `ImageContent`) are not yet supported in the standard bundle.
 
 ## Features
 
