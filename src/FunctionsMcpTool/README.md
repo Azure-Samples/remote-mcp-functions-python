@@ -1,16 +1,29 @@
 # FunctionsMcpTool - MCP Server Sample
 
-This Azure Functions app implements an MCP server that demonstrates various tool patterns. It includes sample tools for connectivity testing, code snippet management with Azure Blob Storage, and more. Additional tools will be added over time to showcase different MCP capabilities.
+This Azure Functions app implements an MCP server that demonstrates various tool patterns, including rich content responses, structured data, batch operations, and Azure Blob Storage integration. It provides comprehensive examples of MCP capabilities on Azure Functions.
+
+> [!NOTE]
+> This project uses the **preview extension bundle** (`Microsoft.Azure.Functions.ExtensionBundle.Preview`) configured in `host.json`. The preview bundle is required because some return types (e.g., `CallToolResult`, `ImageContent`) are not yet supported in the standard bundle.
 
 ## Features
 
-This MCP server currently provides the following tools:
+This MCP server provides the following tools organized by category:
 
-- **hello_mcp**: A simple hello world tool for testing connectivity
+### Basic Tools
+
+- **hello_mcp**: Simple hello world tool for testing connectivity
 - **get_snippet**: Retrieve a saved code snippet by name from Azure Blob Storage
 - **save_snippet**: Save a code snippet with a name to Azure Blob Storage
 
-More tools will be added to demonstrate additional MCP patterns and Azure Functions bindings.
+### Rich Content Tools
+
+- **generate_qr_code**: Generates a QR code PNG from text and returns it as base64-encoded `ImageContent` (demonstrates single image response)
+
+### Advanced Snippet Tools
+
+- **get_snippet_with_metadata**: Returns snippet content plus structured JSON metadata (demonstrates `CallToolResult` with content blocks and structured data)
+- **batch_save_snippets**: Saves multiple snippets in a single operation (demonstrates batch/array tool inputs)
+- **save_snippet_structured**: Saves a snippet and returns a structured `Snippet` object (demonstrates POCO/dataclass pattern)
 
 ## Prerequisites
 
@@ -26,10 +39,9 @@ An Azure Storage Emulator is needed to store snippets locally:
 
 ```shell
 docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 \
-    mcr.microsoft.com/azure-storage/azurite
+    mcr.microsoft.com/azure-storage/azurite \
+    azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
 ```
-
-> **Note**: If using the Azurite VS Code extension, run `Azurite: Start` from the command palette.
 
 ### 2. Install Dependencies
 
@@ -60,9 +72,18 @@ func start
 1. Open [.vscode/mcp.json](../../.vscode/mcp.json)
 2. Find the server called `local-mcp-function` and click **Start**. The server uses the endpoint: `http://localhost:7071/runtime/webhooks/mcp`
 3. In Copilot chat agent mode, try these prompts:
+   
+   **Basic Tools:**
    - "Say Hello"
    - "Save this snippet as snippet1" (with code selected)
    - "Retrieve snippet1 and apply to newFile.py"
+   
+   **Rich Content Tools:**
+   - "Generate a QR code for https://example.com"
+   
+   **Advanced Tools:**
+   - "Get snippet1 with metadata"
+   - "Batch save these snippets: [{'name': 'test1', 'content': 'code1'}, {'name': 'test2', 'content': 'code2'}]"
 
 ### Connect from MCP Inspector
 
@@ -97,31 +118,105 @@ az storage blob list --container-name snippets --connection-string "DefaultEndpo
 
 The function uses Azure Functions' first-class MCP decorators to expose tools:
 
+### Basic Tool Example
+
 ```python
 @app.mcp_tool()
 def hello_mcp() -> str:
     """Hello world."""
     return "Hello I am MCPTool!"
+```
 
+### Blob Storage Integration
+
+```python
 @app.mcp_tool()
 @app.mcp_tool_property(arg_name="snippetname", description="The name of the snippet.")
 @app.blob_input(arg_name="file", connection="AzureWebJobsStorage", path=_BLOB_PATH)
 def get_snippet(file: func.InputStream, snippetname: str) -> str:
     """Retrieve a snippet by name from Azure Blob Storage."""
-    # ... implementation
+    snippet_content = file.read().decode("utf-8")
+    return snippet_content
+```
+
+### Rich Content Response - Single Image
+
+```python
+@app.mcp_tool()
+@app.mcp_tool_property(arg_name="text", description="The text to encode in the QR code.", required=True)
+def generate_qr_code(text: str) -> ImageContent:
+    """Generates a QR code PNG and returns it as a base64-encoded image."""
+    # Generate QR code...
+    return ImageContent(
+        type="image",
+        data=base64.b64encode(png_bytes).decode('utf-8'),
+        mimeType="image/png"
+    )
+```
+
+### Structured Content with Metadata
+
+```python
+@app.mcp_tool()
+@app.mcp_tool_property(arg_name="snippetname", description="The name of the snippet.", required=True)
+def get_snippet_with_metadata(snippetname: str) -> Dict[str, Any]:
+    """Returns both content blocks and structured metadata."""
+    metadata = {
+        "name": snippetname,
+        "found": snippet_content is not None,
+        "character_count": len(snippet_content) if snippet_content else 0,
+        "retrieved_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    return {
+        "content": [
+            {"type": "text", "text": snippet_content or "Not found"},
+            {"type": "text", "text": json.dumps(metadata, indent=2)}
+        ],
+        "structured_content": metadata
+    }
+```
+
+### Batch Operations
+
+```python
+@app.mcp_tool()
+@app.mcp_tool_property(
+    arg_name="snippet_items",
+    description="Array of snippet objects with 'name' and 'content' properties",
+    required=True
+)
+async def batch_save_snippets(snippet_items: List[Dict[str, str]]) -> str:
+    """Saves multiple snippets in a single operation."""
+    # Save each snippet to blob storage...
+    return json.dumps({
+        "message": f"Successfully saved {len(saved_snippets)} snippets",
+        "snippets": saved_snippets
+    })
+```
+
+### Structured Data Class (POCO Pattern)
+
+```python
+@dataclass
+class Snippet:
+    """Snippet model for structured content."""
+    name: str
+    content: Optional[str] = None
 
 @app.mcp_tool()
-@app.mcp_tool_property(arg_name="snippetname", description="The name of the snippet.")
-@app.mcp_tool_property(arg_name="snippet", description="The content of the snippet.")
-@app.blob_output(arg_name="file", connection="AzureWebJobsStorage", path=_BLOB_PATH)
-def save_snippet(file: func.Out[str], snippetname: str, snippet: str) -> str:
-    """Save a snippet with a name to Azure Blob Storage."""
-    # ... implementation
+@app.mcp_tool_property(arg_name="name", description="The name of the snippet", required=True)
+@app.mcp_tool_property(arg_name="content", description="The code snippet content", required=True)
+def save_snippet_structured(name: str, content: str) -> Snippet:
+    """Returns a structured dataclass instance."""
+    # Save to storage...
+    return Snippet(name=name, content=content)
 ```
 
 The MCP decorators automatically:
 - Infer tool properties from function signatures and type hints
-- Handle JSON serialization
+- Handle JSON serialization for rich content types
+- Support batch operations with array/object inputs
 - Expose the functions as MCP tools without manual configuration
 
 ## Deployment to Azure
@@ -130,11 +225,9 @@ See [Deploy to Azure for Remote MCP](../../README.md#deploy-to-azure-for-remote-
 
 ## Troubleshooting
 
-## Troubleshooting
-
 | Error | Solution |
 |---|---|
 | `AttributeError: 'FunctionApp' object has no attribute 'mcp_resource_trigger'` | Python 3.13 is required. Verify with `python3 --version`. Install via `brew install python@3.13` (macOS) or from [python.org](https://www.python.org/downloads/). Recreate your virtual environment with Python 3.13 after installing. |
-| Connection refused | Ensure Azurite is running (`docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`) |
-| API version not supported by Azurite | Pull the latest Azurite image (`docker pull mcr.microsoft.com/azure-storage/azurite`) then restart Azurite and the app |
+| Connection refused | Ensure Azurite is running with `--skipApiVersionCheck` flag |
+| API version not supported by Azurite | Add `--skipApiVersionCheck` flag to the Azurite command, or pull the latest Azurite image |
 | Blob not found | Verify the snippet was saved successfully and the name matches exactly |
