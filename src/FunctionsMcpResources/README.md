@@ -145,7 +145,7 @@ def get_server_info(context) -> str:
 Install and use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to test your resources:
 
 ```bash
-npx @modelcontextprotocol/inspector http://localhost:7073/runtime/webhooks/mcp
+npx @modelcontextprotocol/inspector http://localhost:7071/runtime/webhooks/mcp
 ```
 
 ### Using curl
@@ -153,7 +153,7 @@ npx @modelcontextprotocol/inspector http://localhost:7073/runtime/webhooks/mcp
 Test the ServerInfo static resource:
 
 ```bash
-curl -X POST http://localhost:7073/runtime/webhooks/mcp \
+curl -X POST http://localhost:7071/runtime/webhooks/mcp \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -168,7 +168,7 @@ curl -X POST http://localhost:7073/runtime/webhooks/mcp \
 List available resource templates:
 
 ```bash
-curl -X POST http://localhost:7073/runtime/webhooks/mcp \
+curl -X POST http://localhost:7071/runtime/webhooks/mcp \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -180,7 +180,7 @@ curl -X POST http://localhost:7073/runtime/webhooks/mcp \
 Read a specific snippet:
 
 ```bash
-curl -X POST http://localhost:7073/runtime/webhooks/mcp \
+curl -X POST http://localhost:7071/runtime/webhooks/mcp \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
