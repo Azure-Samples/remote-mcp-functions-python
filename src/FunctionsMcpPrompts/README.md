@@ -89,11 +89,51 @@ For remote servers, replace the server name accordingly (e.g., `/mcp.remote-mcp-
 
 ## Deploy to Azure
 
+### Step 1: Sign in
+
 ```shell
-azd env set DEPLOY_SERVICE prompts
-azd provision
-azd deploy --service prompts
+az login
+azd auth login
 ```
+
+### Step 2: Create an environment
+
+```shell
+azd env new <environment-name>
+```
+
+This also becomes the resource group name.
+
+### Step 3: Provision and deploy
+
+By default, OAuth-based authentication is enabled using the [built-in MCP auth feature](https://learn.microsoft.com/azure/app-service/configure-authentication-mcp?toc=/azure/azure-functions/toc.json&bc=/azure/azure-functions/breadcrumb/toc.json) with Microsoft Entra as the identity provider.
+
+Configure VS Code as an allowed client application for Microsoft Entra:
+
+```shell
+azd env set PRE_AUTHORIZED_CLIENT_IDS aebc6443-996d-45c2-90f0-388ff96faa56
+```
+
+Optionally enable VNet isolation:
+
+```shell
+azd env set VNET_ENABLED true
+```
+
+Deploy the project. When prompted, pick your subscription and an Azure region.
+
+```shell
+azd up
+```
+
+### Step 4: Connect to the remote MCP server
+
+Open **`.vscode/mcp.json`** and click **Start** above **`remote-mcp-function`**. You'll be prompted for `functionapp-name` — find it in your `azd` command output or the `.azure/<env>/.env` file. Since authentication is enabled, you'll also be prompted to sign in with Microsoft.
+
+### Redeploy and clean up
+
+- **Redeploy:** `azd deploy`
+- **Clean up all resources:** `azd down`
 
 ## Examining the code
 
