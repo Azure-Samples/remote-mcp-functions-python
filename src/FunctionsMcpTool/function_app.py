@@ -363,7 +363,3 @@ def save_snippet_structured(file: func.Out[str], name: str, content: str) -> Sni
     logging.info(f"Saving snippet '{name}' as structured content")
     file.set(content)
     return Snippet(name=name, content=content)
-
-
-
-
