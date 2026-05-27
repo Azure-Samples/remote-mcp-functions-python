@@ -15,7 +15,9 @@ This project is a Python Azure Function app that exposes multiple MCP (Model Con
 | `get_snippet` | Retrieves a code snippet from blob storage |
 | `save_snippet` | Saves a code snippet to blob storage |
 | `generate_qr_code` | Generates a QR code image from text |
-| `get_snippet_with_metadata` | Retrieves a snippet with structured metadata |
+| `generate_badge` | Generates an SVG status badge (List[ContentBlock]) |
+| `get_website_preview` | Fetches website metadata and returns a resource link (List[ContentBlock]) |
+| `get_snippet_with_metadata` | Retrieves a snippet with structured metadata (CallToolResult) |
 | `batch_save_snippets` | Saves multiple snippets at once |
 | `save_snippet_structured` | Saves a snippet and returns a structured dataclass |
 
