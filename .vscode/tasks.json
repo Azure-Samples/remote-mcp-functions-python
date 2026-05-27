@@ -2,6 +2,23 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "create venv",
+			"type": "shell",
+			"osx": {
+				"command": "python3 -m venv ${config:azureFunctions.pythonVenv}"
+			},
+			"windows": {
+				"command": "python -m venv ${config:azureFunctions.pythonVenv}"
+			},
+			"linux": {
+				"command": "python3 -m venv ${config:azureFunctions.pythonVenv}"
+			},
+			"options": {
+				"cwd": "${workspaceFolder}/src/McpWeatherApp"
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "pip install (functions)",
 			"type": "shell",
 			"osx": {
@@ -16,7 +33,8 @@
 			"options": {
 				"cwd": "${workspaceFolder}/src/McpWeatherApp"
 			},
-			"problemMatcher": []
+			"problemMatcher": [],
+			"dependsOn": "create venv"
 		},
 		{
 			"type": "func",
