@@ -12,6 +12,7 @@ This project is a Python Azure Function app that exposes multiple MCP (Model Con
 | Tool | Description |
 |------|-------------|
 | `hello_mcp` | Simple hello world tool |
+| `hello_tool_with_auth` | Greets the signed-in user by name via Microsoft Graph (OBO flow) |
 | `get_snippet` | Retrieves a code snippet from blob storage |
 | `save_snippet` | Saves a code snippet to blob storage |
 | `generate_qr_code` | Generates a QR code image from text |
