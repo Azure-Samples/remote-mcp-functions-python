@@ -126,15 +126,11 @@ def _build_obo_credential(context):
     #    federated credential (proves the app's identity without a client secret)
     federated_mi_client_id = os.environ.get("OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID")
     if not federated_mi_client_id:
-        raise ValueError(
-            "OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID is not set. "
-        )
+        raise ValueError("OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID is not set.")
 
     client_id = os.environ.get("WEBSITE_AUTH_CLIENT_ID")
     if not client_id:
-        raise ValueError(
-            "WEBSITE_AUTH_CLIENT_ID is not set. "
-        )
+        raise ValueError("WEBSITE_AUTH_CLIENT_ID is not set.")
 
     token_exchange_audience = os.environ.get("TokenExchangeAudience", "api://AzureADTokenExchange")
     managed_identity = ManagedIdentityCredential(client_id=federated_mi_client_id)
