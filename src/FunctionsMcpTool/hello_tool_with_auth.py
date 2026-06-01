@@ -107,9 +107,7 @@ def _build_obo_credential(context):
     # 2. Get the tenant ID from X-MS-CLIENT-PRINCIPAL
     encoded_principal = headers.get("X-MS-CLIENT-PRINCIPAL", "")
     if not encoded_principal:
-        raise ValueError(
-            "X-MS-CLIENT-PRINCIPAL header is missing. "
-        )
+        raise ValueError("X-MS-CLIENT-PRINCIPAL header is missing.")
 
     try:
         principal = json.loads(base64.b64decode(encoded_principal))
