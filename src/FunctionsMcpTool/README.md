@@ -229,7 +229,7 @@ else:
 ```python
 def _build_obo_credential(context):
     # Extract headers from MCP context
-    headers = context.get("HttpTransport", {}).get("Headers", {})
+    headers = context.get("transport", {}).get("properties", {}).get("headers", {})
 
     user_token = headers.get("X-MS-TOKEN-AAD-ACCESS-TOKEN", "")
     tenant_id = ...  # decoded from X-MS-CLIENT-PRINCIPAL
