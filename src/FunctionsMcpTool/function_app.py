@@ -14,6 +14,10 @@ from azure.storage.blob import BlobServiceClient
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
+# Register blueprints from separate files
+from hello_tool_with_auth import bp as auth_bp
+app.register_blueprint(auth_bp)
+
 # Constants for the Azure Blob Storage container, file, and blob path
 _SNIPPET_NAME_PROPERTY_NAME = "snippetname"
 _BLOB_PATH = "snippets/{mcptoolargs." + _SNIPPET_NAME_PROPERTY_NAME + "}.json"
