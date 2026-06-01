@@ -52,10 +52,12 @@ async def hello_tool_with_auth(context: MCPToolContext) -> str:
 
     # Call Microsoft Graph /me
     try:
+        import asyncio
         import aiohttp
 
-        token = credential.get_token(*graph_scopes)
-        async with aiohttp.ClientSession() as session:
+        token = await asyncio.to_thread(credential.get_token, *graph_scopes)
+        timeout = aiohttp.ClientTimeout(total=15)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(
                 "https://graph.microsoft.com/v1.0/me",
                 headers={"Authorization": f"Bearer {token.token}"},

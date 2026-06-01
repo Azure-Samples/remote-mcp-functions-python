@@ -281,7 +281,7 @@ See [Overview of permissions and consent in the Microsoft identity platform](htt
 | Connection refused locally | Ensure Azurite is running (`docker run -p 10000:10000 ...`) |
 | API version not supported by Azurite | Add `--skipApiVersionCheck` flag to the Azurite command, or pull the latest image |
 | `hello_tool_with_auth` fails locally | Ensure you're signed in with `az login` or `azd auth login` |
-| OBO errors in production | Verify that consent has been granted (see Step 4) and that the Entra app registration is configured correctly |
+| OBO errors in deployed server | Verify that consent has been granted (see Step 4) and that the Entra app registration is configured correctly |
 | `An error occurred invoking 'hello_tool_with_auth'` right after `azd up` | Restart the function app: `az functionapp restart -g <resource-group> -n <function-app-name>`. The OBO flow signs a client assertion with the user-assigned managed identity via a federated identity credential (FIC). Right after provisioning, the auth runtime can hold a stale signing credential while the FIC propagates in Entra. Check **Application Insights > Logs** for `AADSTS50013: Assertion failed signature validation` to confirm. |
 | Generic "An error occurred invoking" with no details | Check **Application Insights > Logs** and query `exceptions \| where timestamp > ago(1h) \| project timestamp, outerMessage, innermostMessage` to find the actual error. |
 | `AttributeError: 'FunctionApp' object has no attribute 'mcp_resource_trigger'` | Python 3.13 is required. Verify with `python3 --version`. |
