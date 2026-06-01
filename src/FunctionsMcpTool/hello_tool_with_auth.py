@@ -109,7 +109,6 @@ def _build_obo_credential(context):
     if not encoded_principal:
         raise ValueError(
             "X-MS-CLIENT-PRINCIPAL header is missing. "
-            "Ensure built-in MCP auth is enabled."
         )
 
     try:
@@ -131,14 +130,12 @@ def _build_obo_credential(context):
     if not federated_mi_client_id:
         raise ValueError(
             "OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID is not set. "
-            "This is required for the OBO flow and is normally provisioned by the bicep template."
         )
 
     client_id = os.environ.get("WEBSITE_AUTH_CLIENT_ID")
     if not client_id:
         raise ValueError(
             "WEBSITE_AUTH_CLIENT_ID is not set. "
-            "This is set automatically when built-in auth is enabled."
         )
 
     token_exchange_audience = os.environ.get("TokenExchangeAudience", "api://AzureADTokenExchange")
