@@ -2,6 +2,23 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "create venv",
+			"type": "shell",
+			"osx": {
+				"command": "python3 -m venv ${config:azureFunctions.pythonVenv}"
+			},
+			"windows": {
+				"command": "python -m venv ${config:azureFunctions.pythonVenv}"
+			},
+			"linux": {
+				"command": "python3 -m venv ${config:azureFunctions.pythonVenv}"
+			},
+			"options": {
+				"cwd": "${workspaceFolder}/src/McpWeatherApp"
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "pip install (functions)",
 			"type": "shell",
 			"osx": {
@@ -14,9 +31,10 @@
 				"command": "${config:azureFunctions.pythonVenv}/bin/python -m pip install -r requirements.txt"
 			},
 			"options": {
-				"cwd": "${workspaceFolder}/src"
+				"cwd": "${workspaceFolder}/src/McpWeatherApp"
 			},
-			"problemMatcher": []
+			"problemMatcher": [],
+			"dependsOn": "create venv"
 		},
 		{
 			"type": "func",
@@ -25,7 +43,7 @@
 			"problemMatcher": "$func-python-watch",
 			"isBackground": true,
 			"options": {
-				"cwd": "${workspaceFolder}/src"
+				"cwd": "${workspaceFolder}/src/McpWeatherApp"
 			},
 			"dependsOn": "func: extensions install"
 		},
@@ -34,7 +52,7 @@
 			"command": "extensions install",
 			"dependsOn": "pip install (functions)",
 			"options": {
-				"cwd": "${workspaceFolder}/src"
+				"cwd": "${workspaceFolder}/src/McpWeatherApp"
 			},
 			"problemMatcher": []
 		}
